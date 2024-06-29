@@ -4,7 +4,6 @@ namespace Difflytic.Hash.Adler32
 {
     public sealed class Adler32RollingHash : IRollingHash
     {
-        private const uint Mod = 65521;
         private readonly uint _pop;
         private readonly byte[] _window;
         private uint _a;
@@ -17,7 +16,7 @@ namespace Difflytic.Hash.Adler32
         public Adler32RollingHash(uint blockSize)
         {
             _a = 1;
-            _pop = Mod - blockSize;
+            _pop = Adler32.Mod - blockSize;
             _window = new byte[blockSize];
         }
 
@@ -28,15 +27,15 @@ namespace Difflytic.Hash.Adler32
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void Pop(byte value)
         {
-            _a = (_a + Mod - value) % Mod;
-            _b = (_b + Mod - 1 + _pop * value) % Mod;
+            _a = (_a + Adler32.Mod - value) % Adler32.Mod;
+            _b = (_b + Adler32.Mod - 1 + _pop * value) % Adler32.Mod;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void Push(byte value)
         {
-            _a = (_a + value) % Mod;
-            _b = (_b + _a) % Mod;
+            _a = (_a + value) % Adler32.Mod;
+            _b = (_b + _a) % Adler32.Mod;
         }
 
         #endregion

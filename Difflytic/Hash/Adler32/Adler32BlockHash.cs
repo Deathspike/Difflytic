@@ -4,7 +4,6 @@ namespace Difflytic.Hash.Adler32
 {
     public sealed class Adler32BlockHash : IBlockHash
     {
-        private const uint Mod = 65521;
         private uint _a;
         private uint _b;
 
@@ -35,8 +34,8 @@ namespace Difflytic.Hash.Adler32
         {
             foreach (var value in buffer)
             {
-                _a = (_a + value) % Mod;
-                _b = (_b + _a) % Mod;
+                _a = (_a + value) % Adler32.Mod;
+                _b = (_b + _a) % Adler32.Mod;
             }
 
             return Digest();
