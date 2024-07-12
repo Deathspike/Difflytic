@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using Difflytic.Hash;
 
@@ -32,10 +33,34 @@ namespace Difflytic.Match
 
         #region Methods
 
+        public IEnumerable<long>? Find(uint hash)
+        {
+            var index = Array.BinarySearch(_values, new HashTableEntry { Hash = hash }, HashTableEntryFind.Instance);
+            if (index <= 0) return null;
+            var result = new List<long>();
+
+            while (index > 0)
+            {
+                ref var entry = ref _values[index - 1];
+                if (entry.Hash != hash) break;
+                index--;
+            }
+
+            while (index < _numberOfBlocks)
+            {
+                ref var entry = ref _values[index];
+                if (entry.Hash != hash) break;
+                result.Add(entry.Position);
+                index++;
+            }
+
+            return result;
+        }
+
         private void Init(Stream stream)
         {
             var buffer = new byte[_blockSize];
-            var position = 0ul;
+            var position = 0L;
 
             for (var i = 0; i < _numberOfBlocks; i++)
             {
