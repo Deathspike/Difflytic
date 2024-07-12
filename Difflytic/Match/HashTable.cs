@@ -7,25 +7,19 @@ namespace Difflytic.Match
 {
     public sealed class HashTable
     {
-        private readonly IBlockHash _blockHash;
-        private readonly uint _blockSize;
-        private readonly uint _numberOfBlocks;
-        private readonly HashTableEntry[] _values;
+        private readonly HashTableEntry[] _entries;
 
         #region Constructors
 
-        private HashTable(IBlockHash blockHash, Options options)
+        private HashTable(int numberOfBlocks)
         {
-            _blockHash = blockHash;
-            _blockSize = options.BlockSize;
-            _numberOfBlocks = options.NumberOfBlocks;
-            _values = new HashTableEntry[options.NumberOfBlocks];
+            _entries = new HashTableEntry[numberOfBlocks];
         }
 
-        public static HashTable Create(IBlockHash blockHash, Options options, Stream stream)
+        public static HashTable Create(IBlockHash blockHash, int blockSize, int numberOfBlocks, Stream stream)
         {
-            var hashTable = new HashTable(blockHash, options);
-            hashTable.Init(stream);
+            var hashTable = new HashTable(numberOfBlocks);
+            hashTable.Init(blockHash, blockSize, stream);
             return hashTable;
         }
 
@@ -35,20 +29,20 @@ namespace Difflytic.Match
 
         public IEnumerable<long>? Find(uint hash)
         {
-            var index = Array.BinarySearch(_values, new HashTableEntry { Hash = hash }, HashTableEntryFind.Instance);
+            var index = Array.BinarySearch(_entries, new HashTableEntry { Hash = hash }, HashTableEntryFind.Instance);
             if (index <= 0) return null;
             var result = new List<long>();
 
             while (index > 0)
             {
-                ref var entry = ref _values[index - 1];
+                ref var entry = ref _entries[index - 1];
                 if (entry.Hash != hash) break;
                 index--;
             }
 
-            while (index < _numberOfBlocks)
+            while (index < _entries.Length)
             {
-                ref var entry = ref _values[index];
+                ref var entry = ref _entries[index];
                 if (entry.Hash != hash) break;
                 result.Add(entry.Position);
                 index++;
@@ -57,21 +51,21 @@ namespace Difflytic.Match
             return result;
         }
 
-        private void Init(Stream stream)
+        private void Init(IBlockHash blockHash, int blockSize, Stream stream)
         {
-            var buffer = new byte[_blockSize];
+            var buffer = new byte[blockSize];
             var position = 0L;
 
-            for (var i = 0; i < _numberOfBlocks; i++)
+            for (var i = 0; i < _entries.Length; i++)
             {
                 stream.ReadExactly(buffer);
-                ref var entry = ref _values[i];
-                entry.Hash = _blockHash.AddAndDigest(buffer);
+                ref var entry = ref _entries[i];
+                entry.Hash = blockHash.AddAndDigest(buffer);
                 entry.Position = position;
-                position += _blockSize;
+                position += blockSize;
             }
 
-            Array.Sort(_values, HashTableEntrySort.Instance);
+            Array.Sort(_entries, HashTableEntrySort.Instance);
         }
 
         #endregion
