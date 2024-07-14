@@ -13,10 +13,10 @@ namespace Difflytic.Hash.Adler32
 
         #region Constructors
 
-        public Adler32RollingHash(uint blockSize)
+        public Adler32RollingHash(int blockSize)
         {
             _a = 1;
-            _pop = Adler32.Mod - blockSize;
+            _pop = Adler32.Mod - (uint)blockSize;
             _window = new byte[blockSize];
         }
 
