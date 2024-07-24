@@ -2,9 +2,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using Difflytic.Hash;
+using Difflytic.Hashing;
 
-namespace Difflytic.Match
+namespace Difflytic.Matching
 {
     public sealed class Matcher : IEnumerable<MatcherBlock>
     {

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Difflytic.Hash.Adler32
+namespace Difflytic.Hashing.Adler32
 {
     public sealed class Adler32BlockHash : IBlockHash
     {

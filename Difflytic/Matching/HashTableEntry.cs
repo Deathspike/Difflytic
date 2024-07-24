@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace Difflytic.Match
+namespace Difflytic.Matching
 {
     [StructLayout(LayoutKind.Explicit, Pack = 1)]
     public struct HashTableEntry

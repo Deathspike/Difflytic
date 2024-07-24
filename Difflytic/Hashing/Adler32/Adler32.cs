@@ -1,4 +1,4 @@
-﻿namespace Difflytic.Hash.Adler32
+﻿namespace Difflytic.Hashing.Adler32
 {
     public static class Adler32
     {

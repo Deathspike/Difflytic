@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Difflytic.Match
+namespace Difflytic.Matching
 {
     public sealed class HashTableEntrySort : IComparer<HashTableEntry>
     {
