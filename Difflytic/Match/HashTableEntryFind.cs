@@ -4,7 +4,7 @@ namespace Difflytic.Match
 {
     public sealed class HashTableEntryFind : IComparer<HashTableEntry>
     {
-        public static HashTableEntryFind Instance = new();
+        public static readonly HashTableEntryFind Instance = new();
 
         #region Implementation of IComparer<HashTableEntry>
 

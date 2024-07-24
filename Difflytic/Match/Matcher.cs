@@ -6,14 +6,13 @@ using Difflytic.Hash;
 
 namespace Difflytic.Match
 {
-    public sealed class Matcher : IEnumerable<MatcherResult>
+    public sealed class Matcher : IEnumerable<MatcherBlock>
     {
         private readonly int _blockSize;
         private readonly HashTable _hashTable;
         private readonly Stream _newStream;
         private readonly Stream _oldStream;
         private readonly IRollingHash _rollingHash;
-        private long _copyPosition;
 
         #region Constructors
 
@@ -35,13 +34,13 @@ namespace Difflytic.Match
 
         #region Methods
 
-        public MatcherResult? GetBestBlock(IEnumerable<long> oldStartPositions, long newStartPosition)
+        private MatcherBlock? GetBestBlock(long lastPosition, IEnumerable<long> oldStartPositions, long newStartPosition)
         {
-            MatcherResult? result = null;
+            MatcherBlock? result = null;
 
             foreach (var oldStartPosition in oldStartPositions)
             {
-                var block = GetBlock(oldStartPosition, newStartPosition);
+                var block = GetBlock(lastPosition, oldStartPosition, newStartPosition);
 
                 if (block == null)
                 {
@@ -57,14 +56,14 @@ namespace Difflytic.Match
             return result;
         }
 
-        private MatcherResult? GetBlock(long oldStartPosition, long newStartPosition)
+        private MatcherBlock? GetBlock(long lastPosition, long oldStartPosition, long newStartPosition)
         {
             var oldPosition = Math.Max(0, oldStartPosition - _blockSize);
             var newPosition = Math.Max(0, newStartPosition - _blockSize);
 
-            if (newPosition < _copyPosition)
+            if (newPosition < lastPosition)
             {
-                var shiftCount = _copyPosition - newPosition;
+                var shiftCount = lastPosition - newPosition;
                 oldPosition += shiftCount;
                 newPosition += shiftCount;
             }
@@ -72,15 +71,18 @@ namespace Difflytic.Match
             _oldStream.Position = oldPosition;
             _newStream.Position = newPosition;
 
-            return ReadBlock(oldStartPosition, oldPosition, out var backCount, out var blockCount)
-                ? new MatcherResult(false, backCount + blockCount, newStartPosition - backCount, oldStartPosition - backCount)
-                : null;
+            if (ReadBlock(oldStartPosition, oldPosition, out var blockCount, out var extraCount))
+            {
+                return new MatcherBlock(false, extraCount + blockCount, newStartPosition - extraCount, oldStartPosition - extraCount);
+            }
+
+            return null;
         }
 
-        private bool ReadBlock(long oldStartPosition, long oldPosition, out int backCount, out int blockCount)
+        private bool ReadBlock(long oldStartPosition, long oldPosition, out int blockCount, out int extraCount)
         {
-            backCount = 0;
             blockCount = 0;
+            extraCount = 0;
 
             while (true)
             {
@@ -95,11 +97,11 @@ namespace Difflytic.Match
                 }
                 else if (oldByte == newByte)
                 {
-                    backCount++;
+                    extraCount++;
                 }
                 else
                 {
-                    backCount = 0;
+                    extraCount = 0;
                 }
 
                 oldPosition++;
@@ -119,43 +121,52 @@ namespace Difflytic.Match
 
         #endregion
 
-        #region Implementation of IEnumerable<MatcherResult>
+        #region Implementation of IEnumerable<MatcherBlock>
 
-        public IEnumerator<MatcherResult> GetEnumerator()
+        public IEnumerator<MatcherBlock> GetEnumerator()
         {
             var hashCount = 0L;
+            var lastPosition = 0L;
             var readPosition = 0L;
 
             while (true)
             {
+                // Read a byte and roll the hash.
                 var newByte = _newStream.ReadByte();
                 if (newByte == -1) break;
                 _rollingHash.Add((byte)newByte);
 
+                // Update the matcher state.
                 hashCount++;
                 readPosition++;
 
+                // Find positions for the current hash.
                 if (hashCount < _blockSize) continue;
                 var oldStartPositions = _hashTable.Find(_rollingHash.Digest());
                 if (oldStartPositions == null) continue;
 
-                var block = GetBestBlock(oldStartPositions, readPosition - _blockSize);
+                // Find the best block for the positions.
+                var block = GetBestBlock(lastPosition, oldStartPositions, readPosition - _blockSize);
                 if (block != null)
                 {
-                    var betweenCount = block.NewPosition - _copyPosition;
-                    if (betweenCount > 0) yield return new MatcherResult(true, betweenCount, _copyPosition, -1);
+                    // Find the copy block between two blocks.
+                    var betweenCount = block.NewPosition - lastPosition;
+                    if (betweenCount > 0) yield return new MatcherBlock(true, betweenCount, lastPosition);
                     yield return block;
 
+                    // Update the matcher state.
+                    lastPosition = block.NewPosition + block.Length;
+                    readPosition = lastPosition;
                     hashCount = 0;
-                    readPosition = block.NewPosition + block.Length;
-                    _copyPosition = readPosition;
                 }
 
+                // Reset the stream position.
                 _newStream.Position = readPosition;
             }
 
-            var endCount = readPosition - _copyPosition;
-            if (endCount > 0) yield return new MatcherResult(true, endCount, _copyPosition, -1);
+            // Find the copy block after the last block.
+            var endCount = readPosition - lastPosition;
+            if (endCount > 0) yield return new MatcherBlock(true, endCount, lastPosition);
         }
 
         #endregion
