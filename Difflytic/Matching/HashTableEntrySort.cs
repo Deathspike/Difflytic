@@ -6,6 +6,14 @@ namespace Difflytic.Matching
     {
         public static readonly HashTableEntrySort Instance = new();
 
+        #region Constructors
+
+        private HashTableEntrySort()
+        {
+        }
+
+        #endregion
+
         #region Implementation of IComparer<HashTableEntry>
 
         public int Compare(HashTableEntry x, HashTableEntry y)

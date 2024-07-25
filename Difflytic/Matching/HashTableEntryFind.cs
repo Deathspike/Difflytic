@@ -6,6 +6,14 @@ namespace Difflytic.Matching
     {
         public static readonly HashTableEntryFind Instance = new();
 
+        #region Constructors
+
+        private HashTableEntryFind()
+        {
+        }
+
+        #endregion
+
         #region Implementation of IComparer<HashTableEntry>
 
         public int Compare(HashTableEntry x, HashTableEntry y)

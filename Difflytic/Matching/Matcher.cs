@@ -16,18 +16,13 @@ namespace Difflytic.Matching
 
         #region Constructors
 
-        private Matcher(int blockSize, HashTable hashTable, Stream newStream, Stream oldStream, IRollingHash rollingHash)
+        public Matcher(int blockSize, HashTable hashTable, Stream newStream, Stream oldStream, IRollingHash rollingHash)
         {
             _blockSize = blockSize;
             _hashTable = hashTable;
             _newStream = newStream;
             _oldStream = oldStream;
             _rollingHash = rollingHash;
-        }
-
-        public static Matcher Create(int blockSize, HashTable hashTable, Stream newStream, Stream oldStream, IRollingHash rollingHash)
-        {
-            return new Matcher(blockSize, hashTable, newStream, oldStream, rollingHash);
         }
 
         #endregion
@@ -47,7 +42,7 @@ namespace Difflytic.Matching
                     continue;
                 }
 
-                if (result == null || block.Length > result.Length || (block.Length == result.Length && block.OldPosition < result.OldPosition))
+                if (result == null || block.NewPosition < result.NewPosition || (block.NewPosition == result.NewPosition && block.Length > result.Length))
                 {
                     result = block;
                 }
@@ -58,9 +53,11 @@ namespace Difflytic.Matching
 
         private MatcherBlock? GetBlock(long lastPosition, long oldStartPosition, long newStartPosition)
         {
+            // Use the positions minus the block size to match between two blocks.
             var oldPosition = Math.Max(0, oldStartPosition - _blockSize);
             var newPosition = Math.Max(0, newStartPosition - _blockSize);
 
+            // Ensure the positions never overlap with the last block.
             if (newPosition < lastPosition)
             {
                 var shiftCount = lastPosition - newPosition;
@@ -68,18 +65,17 @@ namespace Difflytic.Matching
                 newPosition += shiftCount;
             }
 
+            // Set the stream positions.
             _oldStream.Position = oldPosition;
             _newStream.Position = newPosition;
 
-            if (ReadBlock(oldStartPosition, oldPosition, out var blockCount, out var extraCount))
-            {
-                return new MatcherBlock(false, extraCount + blockCount, newStartPosition - extraCount, oldStartPosition - extraCount);
-            }
-
-            return null;
+            // Scan the block.
+            return ScanBlock(oldStartPosition, oldPosition, out var blockCount, out var extraCount)
+                ? new MatcherBlock(false, extraCount + blockCount, newStartPosition - extraCount, oldStartPosition - extraCount)
+                : null;
         }
 
-        private bool ReadBlock(long oldStartPosition, long oldPosition, out int blockCount, out int extraCount)
+        private bool ScanBlock(long oldStartPosition, long oldPosition, out int blockCount, out int extraCount)
         {
             blockCount = 0;
             extraCount = 0;
