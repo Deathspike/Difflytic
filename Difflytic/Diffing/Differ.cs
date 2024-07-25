@@ -1,11 +1,11 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
+using Difflytic.Diffing.Hashing;
+using Difflytic.Diffing.Matching;
 using Difflytic.Extensions;
-using Difflytic.Hashing;
-using Difflytic.Matching;
 
-namespace Difflytic
+namespace Difflytic.Diffing
 {
     public sealed class Differ
     {

@@ -1,6 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 
-namespace Difflytic.Hashing.Adler32
+namespace Difflytic.Diffing.Hashing.Adler32
 {
     public sealed class Adler32RollingHash : IRollingHash
     {

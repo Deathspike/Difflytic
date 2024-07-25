@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using Difflytic.Hashing;
+using Difflytic.Diffing.Hashing;
 
-namespace Difflytic.Matching
+namespace Difflytic.Diffing.Matching
 {
     public sealed class HashTable
     {

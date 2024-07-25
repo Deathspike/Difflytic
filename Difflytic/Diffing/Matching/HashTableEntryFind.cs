@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Difflytic.Matching
+namespace Difflytic.Diffing.Matching
 {
     public sealed class HashTableEntryFind : IComparer<HashTableEntry>
     {

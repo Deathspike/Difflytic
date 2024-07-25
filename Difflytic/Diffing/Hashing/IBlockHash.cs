@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Difflytic.Hashing
+namespace Difflytic.Diffing.Hashing
 {
     public interface IBlockHash
     {

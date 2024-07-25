@@ -1,4 +1,4 @@
-﻿namespace Difflytic.Hashing.Adler32
+﻿namespace Difflytic.Diffing.Hashing.Adler32
 {
     public sealed class Adler32HashFactory : IHashFactory
     {
