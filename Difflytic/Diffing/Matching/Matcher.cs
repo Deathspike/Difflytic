@@ -29,13 +29,13 @@ namespace Difflytic.Diffing.Matching
 
         #region Methods
 
-        private MatcherBlock? GetBestBlock(long lastPosition, IEnumerable<long> oldStartPositions, long newStartPosition)
+        private MatcherBlock? GetBestBlock(long lastPosition, long newStartPosition, IEnumerable<long> oldStartPositions)
         {
             MatcherBlock? result = null;
 
             foreach (var oldStartPosition in oldStartPositions)
             {
-                var block = GetBlock(lastPosition, oldStartPosition, newStartPosition);
+                var block = GetBlock(lastPosition, newStartPosition, oldStartPosition);
 
                 if (block == null)
                 {
@@ -51,7 +51,7 @@ namespace Difflytic.Diffing.Matching
             return result;
         }
 
-        private MatcherBlock? GetBlock(long lastPosition, long oldStartPosition, long newStartPosition)
+        private MatcherBlock? GetBlock(long lastPosition, long newStartPosition, long oldStartPosition)
         {
             // Use the positions minus the block size to match between two blocks.
             var oldPosition = Math.Max(0, oldStartPosition - _blockSize);
@@ -70,12 +70,12 @@ namespace Difflytic.Diffing.Matching
             _newStream.Position = newPosition;
 
             // Scan the block.
-            return ScanBlock(oldStartPosition, oldPosition, out var blockCount, out var extraCount)
+            return ScanBlock(oldPosition, oldStartPosition, out var blockCount, out var extraCount)
                 ? new MatcherBlock(false, extraCount + blockCount, newStartPosition - extraCount, oldStartPosition - extraCount)
                 : null;
         }
 
-        private bool ScanBlock(long oldStartPosition, long oldPosition, out int blockCount, out int extraCount)
+        private bool ScanBlock(long oldPosition, long oldStartPosition, out int blockCount, out int extraCount)
         {
             blockCount = 0;
             extraCount = 0;
@@ -142,7 +142,7 @@ namespace Difflytic.Diffing.Matching
                 if (oldStartPositions == null) continue;
 
                 // Find the best block for the positions.
-                var block = GetBestBlock(lastPosition, oldStartPositions, readPosition - _blockSize);
+                var block = GetBestBlock(lastPosition, readPosition - _blockSize, oldStartPositions);
                 if (block != null)
                 {
                     // Find the copy block between two blocks.
