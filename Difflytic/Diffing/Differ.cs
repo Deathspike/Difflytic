@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using Difflytic.Diffing.Hashing;
@@ -29,8 +31,9 @@ namespace Difflytic.Diffing
         public void Diff(string diffPath, string[] newPaths, string oldPath)
         {
             var hashTable = CreateHashTable(oldPath);
-            WriteFiles(hashTable, newPaths, oldPath);
-            MergeFiles(newPaths, oldPath);
+            var headerCounts = new ConcurrentDictionary<string, long>();
+            WriteFiles(hashTable, headerCounts, newPaths, oldPath);
+            MergeFiles(headerCounts, newPaths, oldPath);
             File.Move(oldPath + ".diffl.tmp", diffPath, true);
         }
 
@@ -41,47 +44,7 @@ namespace Difflytic.Diffing
             return HashTable.Create(blockHash, _blockSize, _numberOfBlocks, oldStream);
         }
 
-        private void WriteFiles(HashTable hashTable, IEnumerable<string> newPaths, string oldPath)
-        {
-            Parallel.ForEach(newPaths, newPath =>
-            {
-                // Configure the matcher.
-                using var newStream = new BufferedStream(File.OpenRead(newPath));
-                using var oldStream = new BufferedStream(File.OpenRead(oldPath));
-                var matcher = new Matcher(_blockSize, hashTable, newStream, oldStream, _hashFactory.CreateRollingHash(_blockSize));
-
-                // Configure the data and header streams.
-                using var dataStream = new BufferedStream(File.OpenWrite(newPath + ".diffd.tmp"));
-                using var headerStream = new BufferedStream(File.OpenWrite(newPath + ".diffh.tmp"));
-                using var headerWriter = new BinaryWriter(headerStream);
-                dataStream.SetLength(0);
-                headerStream.SetLength(0);
-
-                // Match the blocks and write.
-                foreach (var block in matcher)
-                {
-                    if (block.IsCopy)
-                    {
-                        headerWriter.Write(true);
-                        headerWriter.Write7BitEncodedInt64(block.Length);
-                        newStream.Position = block.NewPosition;
-                        newStream.CopyExactly(dataStream, block.Length);
-                    }
-                    else
-                    {
-                        headerWriter.Write(false);
-                        headerWriter.Write7BitEncodedInt64(block.Length);
-                        headerWriter.Write7BitEncodedInt64(block.OldPosition);
-                    }
-                }
-            });
-        }
-
-        #endregion
-
-        #region Statics
-
-        private static void MergeFiles(IReadOnlyCollection<string> newPaths, string oldPath)
+        private void MergeFiles(ConcurrentDictionary<string, long> headerCounts, IReadOnlyCollection<string> newPaths, string oldPath)
         {
             using var outputStream = new BufferedStream(File.OpenWrite(oldPath + ".diffl.tmp"));
             using var outputWriter = new BinaryWriter(outputStream);
@@ -92,7 +55,9 @@ namespace Difflytic.Diffing
 
             foreach (var newPath in newPaths)
             {
+                if (!headerCounts.TryGetValue(newPath, out var headerCount)) throw new Exception(nameof(MergeFiles));
                 outputWriter.Write(Path.GetFileName(newPath));
+                outputWriter.Write7BitEncodedInt64(headerCount);
                 outputWriter.Write7BitEncodedInt64(new FileInfo(newPath + ".diffh.tmp").Length);
                 outputWriter.Write7BitEncodedInt64(new FileInfo(newPath + ".diffd.tmp").Length);
             }
@@ -110,6 +75,49 @@ namespace Difflytic.Diffing
                 File.Delete(newPath + ".diffh.tmp");
                 File.Delete(newPath + ".diffd.tmp");
             }
+        }
+
+        private void WriteFiles(HashTable hashTable, ConcurrentDictionary<string, long> headerCounts, IEnumerable<string> newPaths, string oldPath)
+        {
+            Parallel.ForEach(newPaths, newPath =>
+            {
+                // Configure the matcher.
+                using var newStream = new BufferedStream(File.OpenRead(newPath));
+                using var oldStream = new BufferedStream(File.OpenRead(oldPath));
+                var headerCount = 0;
+                var matcher = new Matcher(_blockSize, hashTable, newStream, oldStream, _hashFactory.CreateRollingHash(_blockSize));
+
+                // Configure the data and header streams.
+                using var dataStream = new BufferedStream(File.OpenWrite(newPath + ".diffd.tmp"));
+                using var headerStream = new BufferedStream(File.OpenWrite(newPath + ".diffh.tmp"));
+                using var headerWriter = new BinaryWriter(headerStream);
+                dataStream.SetLength(0);
+                headerStream.SetLength(0);
+
+                // Match the blocks and write the streams.
+                foreach (var block in matcher)
+                {
+                    if (block.IsCopy)
+                    {
+                        headerWriter.Write(true);
+                        headerWriter.Write7BitEncodedInt64(block.Length);
+                        newStream.Position = block.NewPosition;
+                        newStream.CopyExactly(dataStream, block.Length);
+                    }
+                    else
+                    {
+                        headerWriter.Write(false);
+                        headerWriter.Write7BitEncodedInt64(block.Length);
+                        headerWriter.Write7BitEncodedInt64(block.OldPosition);
+                    }
+
+                    headerCount++;
+                }
+
+                // Save the header count for the entry table.
+                if (headerCounts.TryAdd(newPath, headerCount)) return;
+                throw new Exception(nameof(WriteFiles));
+            });
         }
 
         #endregion
