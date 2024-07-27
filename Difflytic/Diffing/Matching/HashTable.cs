@@ -16,10 +16,10 @@ namespace Difflytic.Diffing.Matching
             _entries = new HashTableEntry[numberOfBlocks];
         }
 
-        public static HashTable Create(IBlockHash blockHash, int blockSize, int numberOfBlocks, Stream stream)
+        public static HashTable Create(IBlockHash blockHash, int blockSize, int numberOfBlocks, Stream oldStream)
         {
             var hashTable = new HashTable(numberOfBlocks);
-            hashTable.Init(blockHash, blockSize, stream);
+            hashTable.Init(blockHash, blockSize, oldStream);
             return hashTable;
         }
 
@@ -51,14 +51,14 @@ namespace Difflytic.Diffing.Matching
             return result;
         }
 
-        private void Init(IBlockHash blockHash, int blockSize, Stream stream)
+        private void Init(IBlockHash blockHash, int blockSize, Stream oldStream)
         {
             var buffer = new byte[blockSize];
             var position = 0L;
 
             for (var i = 0; i < _entries.Length; i++)
             {
-                stream.ReadExactly(buffer);
+                oldStream.ReadExactly(buffer);
                 ref var entry = ref _entries[i];
                 entry.Hash = blockHash.AddAndDigest(buffer);
                 entry.Position = position;

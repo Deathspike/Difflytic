@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Threading.Tasks;
 using Difflytic.Diffing.Hashing;
 using Difflytic.Diffing.Matching;
@@ -47,7 +48,7 @@ namespace Difflytic.Diffing
         private void MergeFiles(ConcurrentDictionary<string, long> headerCounts, IReadOnlyCollection<string> newPaths, string oldPath)
         {
             using var outputStream = new BufferedStream(File.OpenWrite(oldPath + ".diffl.tmp"));
-            using var outputWriter = new BinaryWriter(outputStream);
+            using var outputWriter = new BinaryWriter(outputStream, Encoding.UTF8, true);
             outputStream.SetLength(0);
             outputWriter.Write("difflytic"u8);
             outputWriter.Write((byte)1);
@@ -81,21 +82,20 @@ namespace Difflytic.Diffing
         {
             Parallel.ForEach(newPaths, newPath =>
             {
-                // Configure the matcher.
+                // Configure the file streams.
                 using var newStream = new BufferedStream(File.OpenRead(newPath));
                 using var oldStream = new BufferedStream(File.OpenRead(oldPath));
                 var headerCount = 0;
-                var matcher = new Matcher(_blockSize, hashTable, newStream, oldStream, _hashFactory.CreateRollingHash(_blockSize));
 
                 // Configure the data and header streams.
                 using var dataStream = new BufferedStream(File.OpenWrite(newPath + ".diffd.tmp"));
                 using var headerStream = new BufferedStream(File.OpenWrite(newPath + ".diffh.tmp"));
-                using var headerWriter = new BinaryWriter(headerStream);
+                using var headerWriter = new BinaryWriter(headerStream, Encoding.UTF8, true);
                 dataStream.SetLength(0);
                 headerStream.SetLength(0);
 
-                // Match the blocks and write the streams.
-                foreach (var block in matcher)
+                // Match the blocks.
+                foreach (var block in new Matcher(_blockSize, hashTable, newStream, oldStream, _hashFactory.CreateRollingHash(_blockSize)))
                 {
                     if (block.IsCopy)
                     {
@@ -114,7 +114,7 @@ namespace Difflytic.Diffing
                     headerCount++;
                 }
 
-                // Save the header count for the entry table.
+                // Save the header count.
                 if (headerCounts.TryAdd(newPath, headerCount)) return;
                 throw new Exception(nameof(WriteFiles));
             });
