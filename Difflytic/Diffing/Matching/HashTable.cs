@@ -30,7 +30,7 @@ namespace Difflytic.Diffing.Matching
         public IEnumerable<long>? Find(uint hash)
         {
             var index = Array.BinarySearch(_entries, new HashTableEntry { Hash = hash }, HashTableEntryFind.Instance);
-            if (index <= 0) return null;
+            if (index < 0) return null;
             var result = new List<long>();
 
             while (index > 0)
