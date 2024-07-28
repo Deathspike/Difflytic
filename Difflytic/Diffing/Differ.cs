@@ -27,7 +27,7 @@ namespace Difflytic.Diffing
 
         #region Methods
 
-        public void Diff(string diffPath, string[] newPaths, string oldPath)
+        public void Diff(string diffPath, IReadOnlyCollection<string> newPaths, string oldPath)
         {
             var hashTable = CreateHashTable(oldPath);
             var headerCounts = new ConcurrentDictionary<string, long>();
