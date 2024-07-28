@@ -1,10 +1,25 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <Nullable>enable</Nullable>
         <OutputType>Exe</OutputType>
         <PublishAot>true</PublishAot>
-        <TargetFramework>net8.0</TargetFramework>
-        <Version>1.0.0</Version>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'win-arm64'">
+        <AssemblyName>difflytic-win-arm64</AssemblyName>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'win-x64'">
+        <AssemblyName>difflytic-win-x64</AssemblyName>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'linux-arm64'">
+        <AssemblyName>difflytic-linux-arm64</AssemblyName>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'linux-x64'">
+        <AssemblyName>difflytic-linux-x64</AssemblyName>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'osx-arm64'">
+        <AssemblyName>difflytic-osx-arm64</AssemblyName>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'osx-x64'">
+        <AssemblyName>difflytic-osx-x64</AssemblyName>
     </PropertyGroup>
     <ItemGroup>
         <ProjectReference Include="..\Difflytic\Difflytic.csproj"/>

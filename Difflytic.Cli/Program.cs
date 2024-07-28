@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Reflection;
 using Difflytic.Diffing;
 using Difflytic.Hashing;
 using Difflytic.Patching;
@@ -16,11 +17,12 @@ namespace Difflytic.Cli
         public static void Main(string[] args)
         {
             var options = Options.Create(args);
+            var ver = GetVersion();
             Console.WriteLine(@" ____  _ ___ ___ _     _   _     ");
             Console.WriteLine(@"|    \|_|  _|  _| |_ _| |_|_|___ ");
             Console.WriteLine(@"|  |  | |  _|  _| | | |  _| |  _|");
             Console.WriteLine(@"|____/|_|_| |_| |_|_  |_| |_|___|");
-            Console.WriteLine(@"                  |___|    v1.0.0");
+            Console.WriteLine($"                  |___|    v{ver}");
 
             if (options.Data.Count > 2)
             {
@@ -43,6 +45,13 @@ namespace Difflytic.Cli
         {
             if (blockSize > 0) return blockSize;
             return (int)Math.Max(MinimumBlockSize, new FileInfo(oldPath).Length / MaximumHashTableSize);
+        }
+
+        private static string GetVersion()
+        {
+            var version = Assembly.GetExecutingAssembly().GetName().Version;
+            if (version == null) return "0.0.0";
+            return $"{version.Major}.{version.Minor}.{version.Build}";
         }
 
         #endregion
