@@ -8,7 +8,7 @@ namespace Difflytic.Diffing.Extensions
 
         public static void CopyExactly(this Stream sourceStream, Stream destinationStream, long numberOfBytes)
         {
-            for (var i = 0; i < numberOfBytes; i++)
+            for (var i = numberOfBytes; i > 0; i--)
             {
                 var value = sourceStream.ReadByte();
                 if (value == -1) throw new EndOfStreamException();

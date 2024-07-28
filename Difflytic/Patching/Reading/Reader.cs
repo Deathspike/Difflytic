@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Difflytic.Hashing;
 
 namespace Difflytic.Patching.Reading
 {
@@ -18,10 +19,10 @@ namespace Difflytic.Patching.Reading
             _files = new List<ReaderFile>();
         }
 
-        public static Reader Create(string diffPath)
+        public static Reader Create(IBlockHash blockHash, string diffPath, string oldPath, bool skipValidate = false)
         {
             var reader = new Reader();
-            reader.Init(diffPath);
+            reader.Init(blockHash, diffPath, oldPath, skipValidate);
             return reader;
         }
 
@@ -29,7 +30,7 @@ namespace Difflytic.Patching.Reading
 
         #region Methods
 
-        private void Init(string diffPath)
+        private void Init(IBlockHash blockHash, string diffPath, string oldPath, bool skipValidate)
         {
             // Configure the file stream and reader.
             using var diffStream = new BufferedStream(File.OpenRead(diffPath));
@@ -39,6 +40,11 @@ namespace Difflytic.Patching.Reading
             if (!diffReader.ReadBytes(9).SequenceEqual("difflytic"u8.ToArray())) throw new Exception(nameof(Init));
             var version = diffReader.ReadByte();
             if (version != 1) throw new Exception(nameof(Init));
+
+            // Validate the file hash.
+            var blockSize = diffReader.Read7BitEncodedInt();
+            var previousHash = diffReader.ReadUInt32();
+            if (!skipValidate) ValidateFile(blockHash, blockSize, previousHash, oldPath);
 
             // Read the files.
             ReadFiles(diffReader);
@@ -66,6 +72,29 @@ namespace Difflytic.Patching.Reading
                 file.DataPosition = diffStream.Position;
                 diffStream.Position += file.DataLength;
             }
+        }
+
+        private void ValidateFile(IBlockHash blockHash, int blockSize, uint previousHash, string oldPath)
+        {
+            using var oldStream = new BufferedStream(File.OpenRead(oldPath));
+            var buffer = new byte[blockSize];
+            var currentHash = 0U;
+
+            for (var i = oldStream.Length / blockSize; i > 0; i--)
+            {
+                oldStream.ReadExactly(buffer);
+                currentHash += blockHash.AddAndDigest(buffer, blockSize);
+            }
+
+            while (oldStream.Position != oldStream.Length)
+            {
+                var count = (int)(oldStream.Length - oldStream.Position);
+                oldStream.ReadExactly(buffer, 0, count);
+                currentHash += blockHash.AddAndDigest(buffer, count);
+            }
+
+            if (previousHash == currentHash) return;
+            throw new Exception(nameof(ValidateFile));
         }
 
         #endregion

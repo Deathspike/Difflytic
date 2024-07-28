@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using Difflytic.Diffing.Hashing;
+using Difflytic.Hashing;
 
 namespace Difflytic.Diffing.Matching
 {
@@ -11,14 +11,14 @@ namespace Difflytic.Diffing.Matching
 
         #region Constructors
 
-        private HashTable(int numberOfBlocks)
+        private HashTable(long numberOfBlocks)
         {
             _entries = new HashTableEntry[numberOfBlocks];
         }
 
-        public static HashTable Create(IBlockHash blockHash, int blockSize, int numberOfBlocks, Stream oldStream)
+        public static HashTable Create(IBlockHash blockHash, int blockSize, Stream oldStream)
         {
-            var hashTable = new HashTable(numberOfBlocks);
+            var hashTable = new HashTable(oldStream.Length / blockSize);
             hashTable.Init(blockHash, blockSize, oldStream);
             return hashTable;
         }
@@ -56,17 +56,30 @@ namespace Difflytic.Diffing.Matching
             var buffer = new byte[blockSize];
             var position = 0L;
 
-            for (var i = 0; i < _entries.Length; i++)
+            for (var i = 0; i < _entries.Length; i++, position += blockSize)
             {
                 oldStream.ReadExactly(buffer);
                 ref var entry = ref _entries[i];
-                entry.Hash = blockHash.AddAndDigest(buffer);
+                entry.Hash = blockHash.AddAndDigest(buffer, blockSize);
                 entry.Position = position;
-                position += blockSize;
+                FullHash += entry.Hash;
+            }
+
+            while (oldStream.Position != oldStream.Length)
+            {
+                var count = (int)(oldStream.Length - oldStream.Position);
+                oldStream.ReadExactly(buffer, 0, count);
+                FullHash += blockHash.AddAndDigest(buffer, count);
             }
 
             Array.Sort(_entries, HashTableEntrySort.Instance);
         }
+
+        #endregion
+
+        #region Properties
+
+        public uint FullHash { get; private set; }
 
         #endregion
     }

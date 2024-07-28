@@ -1,19 +1,17 @@
-﻿using System;
-
-namespace Difflytic.Diffing.Hashing.Adler32
+﻿namespace Difflytic.Hashing.Adler32
 {
     public sealed class Adler32BlockHash : IBlockHash
     {
         #region Implementation of IBlockHash
 
-        public uint AddAndDigest(Span<byte> buffer)
+        public uint AddAndDigest(byte[] buffer, int count)
         {
             var a = 1u;
             var b = 0u;
 
-            foreach (var value in buffer)
+            for (var i = 0; i < count; i++)
             {
-                a += value;
+                a += buffer[i];
                 b += a;
 
                 if (a >= Adler32.Mod) a -= Adler32.Mod;

@@ -5,8 +5,8 @@ using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 using Difflytic.Diffing.Extensions;
-using Difflytic.Diffing.Hashing;
 using Difflytic.Diffing.Matching;
+using Difflytic.Hashing;
 
 namespace Difflytic.Diffing
 {
@@ -14,15 +14,13 @@ namespace Difflytic.Diffing
     {
         private readonly int _blockSize;
         private readonly IHashFactory _hashFactory;
-        private readonly int _numberOfBlocks;
 
         #region Constructors
 
-        public Differ(int blockSize, IHashFactory hashFactory, int numberOfBlocks)
+        public Differ(int blockSize, IHashFactory hashFactory)
         {
             _blockSize = blockSize;
             _hashFactory = hashFactory;
-            _numberOfBlocks = numberOfBlocks;
         }
 
         #endregion
@@ -34,7 +32,7 @@ namespace Difflytic.Diffing
             var hashTable = CreateHashTable(oldPath);
             var headerCounts = new ConcurrentDictionary<string, long>();
             WriteFiles(hashTable, headerCounts, newPaths, oldPath);
-            MergeFiles(headerCounts, newPaths, oldPath);
+            MergeFiles(hashTable, headerCounts, newPaths, oldPath);
             File.Move(oldPath + ".diff.tmp", diffPath, true);
         }
 
@@ -42,16 +40,18 @@ namespace Difflytic.Diffing
         {
             using var oldStream = new BufferedStream(File.OpenRead(oldPath));
             var blockHash = _hashFactory.CreateBlockHash();
-            return HashTable.Create(blockHash, _blockSize, _numberOfBlocks, oldStream);
+            return HashTable.Create(blockHash, _blockSize, oldStream);
         }
 
-        private void MergeFiles(ConcurrentDictionary<string, long> headerCounts, IReadOnlyCollection<string> newPaths, string oldPath)
+        private void MergeFiles(HashTable hashTable, ConcurrentDictionary<string, long> headerCounts, IReadOnlyCollection<string> newPaths, string oldPath)
         {
             using var outputStream = new BufferedStream(File.OpenWrite(oldPath + ".diff.tmp"));
             using var outputWriter = new BinaryWriter(outputStream, Encoding.UTF8, true);
             outputStream.SetLength(0);
             outputWriter.Write("difflytic"u8);
             outputWriter.Write((byte)1);
+            outputWriter.Write7BitEncodedInt(_blockSize);
+            outputWriter.Write(hashTable.FullHash);
             outputWriter.Write7BitEncodedInt(newPaths.Count);
 
             foreach (var newPath in newPaths)

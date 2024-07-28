@@ -1,4 +1,4 @@
-﻿namespace Difflytic.Diffing.Hashing
+﻿namespace Difflytic.Hashing
 {
     public interface IRollingHash
     {
