@@ -2,7 +2,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
 using Difflytic.Hashing;
 
@@ -19,10 +18,10 @@ namespace Difflytic.Patching.Reading
             _files = new List<ReaderFile>();
         }
 
-        public static Reader Create(IBlockHash blockHash, string diffPath, string oldPath, bool skipValidate = false)
+        public static Reader Create(string diffPath, string oldPath, bool skipValidate = false)
         {
             var reader = new Reader();
-            reader.Init(blockHash, diffPath, oldPath, skipValidate);
+            reader.Init(diffPath, oldPath, skipValidate);
             return reader;
         }
 
@@ -30,21 +29,22 @@ namespace Difflytic.Patching.Reading
 
         #region Methods
 
-        private void Init(IBlockHash blockHash, string diffPath, string oldPath, bool skipValidate)
+        private void Init(string diffPath, string oldPath, bool skipValidate)
         {
             // Configure the file stream and reader.
             using var diffStream = new BufferedStream(File.OpenRead(diffPath));
             using var diffReader = new BinaryReader(diffStream, Encoding.UTF8, true);
 
             // Validate the file signature and version.
-            if (!diffReader.ReadBytes(9).SequenceEqual("difflytic"u8.ToArray())) throw new Exception(nameof(Init));
+            var signature = Encoding.ASCII.GetString(diffReader.ReadBytes(9));
             var version = diffReader.ReadByte();
-            if (version != 1) throw new Exception(nameof(Init));
+            var hashType = diffReader.ReadByte();
+            if (signature != "difflytic" || version != 1 || !Enum.IsDefined(typeof(HashType), hashType)) throw new Exception(nameof(Init));
 
             // Validate the file hash.
             var blockSize = diffReader.Read7BitEncodedInt();
-            var previousHash = diffReader.ReadUInt32();
-            if (!skipValidate) ValidateFile(blockHash, blockSize, previousHash, oldPath);
+            var fullHash = diffReader.ReadUInt32();
+            if (!skipValidate) ValidateFile(blockSize, fullHash, hashType, oldPath);
 
             // Read the files.
             ReadFiles(diffReader);
@@ -74,10 +74,11 @@ namespace Difflytic.Patching.Reading
             }
         }
 
-        private void ValidateFile(IBlockHash blockHash, int blockSize, uint previousHash, string oldPath)
+        private void ValidateFile(int blockSize, uint fullHash, byte hashType, string oldPath)
         {
             using var oldStream = new BufferedStream(File.OpenRead(oldPath));
             var buffer = new byte[blockSize];
+            var blockHash = HashProvider.CreateBlockHash((HashType)hashType);
             var currentHash = 0U;
 
             for (var i = oldStream.Length / blockSize; i > 0; i--)
@@ -93,7 +94,7 @@ namespace Difflytic.Patching.Reading
                 currentHash += blockHash.AddAndDigest(buffer, count);
             }
 
-            if (previousHash == currentHash) return;
+            if (fullHash == currentHash) return;
             throw new Exception(nameof(ValidateFile));
         }
 

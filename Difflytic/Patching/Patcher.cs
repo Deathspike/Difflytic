@@ -1,36 +1,19 @@
 ﻿using System.IO;
 using System.Threading.Tasks;
-using Difflytic.Hashing;
 using Difflytic.Patching.Reading;
 
 namespace Difflytic.Patching
 {
-    public sealed class Patcher
+    public static class Patcher
     {
-        private readonly IHashFactory _hashFactory;
+        #region Statics
 
-        #region Constructors
-
-        public Patcher(IHashFactory hashFactory)
+        public static void Patch(string diffPath, string oldPath, string outputPath)
         {
-            _hashFactory = hashFactory;
-        }
-
-        #endregion
-
-        #region Methods
-
-        public void Patch(string diffPath, string oldPath, string outputPath)
-        {
-            var blockHash = _hashFactory.CreateBlockHash();
-            var reader = Reader.Create(blockHash, diffPath, oldPath);
+            var reader = Reader.Create(diffPath, oldPath);
             WriteFiles(diffPath, oldPath, outputPath, reader);
             MoveFiles(outputPath, reader);
         }
-
-        #endregion
-
-        #region Statics
 
         private static void MoveFiles(string outputPath, Reader reader)
         {

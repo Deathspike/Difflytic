@@ -13,14 +13,14 @@ namespace Difflytic.Diffing
     public sealed class Differ
     {
         private readonly int _blockSize;
-        private readonly IHashFactory _hashFactory;
+        private readonly HashType _hashType;
 
         #region Constructors
 
-        public Differ(int blockSize, IHashFactory hashFactory)
+        public Differ(int blockSize, HashType hashType)
         {
             _blockSize = blockSize;
-            _hashFactory = hashFactory;
+            _hashType = hashType;
         }
 
         #endregion
@@ -39,7 +39,7 @@ namespace Difflytic.Diffing
         private HashTable CreateHashTable(string oldPath)
         {
             using var oldStream = new BufferedStream(File.OpenRead(oldPath));
-            var blockHash = _hashFactory.CreateBlockHash();
+            var blockHash = HashProvider.CreateBlockHash(_hashType);
             return HashTable.Create(blockHash, _blockSize, oldStream);
         }
 
@@ -50,6 +50,7 @@ namespace Difflytic.Diffing
             outputStream.SetLength(0);
             outputWriter.Write("difflytic"u8);
             outputWriter.Write((byte)1);
+            outputWriter.Write((byte)_hashType);
             outputWriter.Write7BitEncodedInt(_blockSize);
             outputWriter.Write(hashTable.FullHash);
             outputWriter.Write7BitEncodedInt(newPaths.Count);
@@ -95,7 +96,7 @@ namespace Difflytic.Diffing
                 headerStream.SetLength(0);
 
                 // Match the blocks.
-                foreach (var block in new Matcher(_blockSize, hashTable, newStream, oldStream, _hashFactory.CreateRollingHash(_blockSize)))
+                foreach (var block in new Matcher(_blockSize, hashTable, newStream, oldStream, HashProvider.CreateRollingHash(_blockSize, _hashType)))
                 {
                     if (block.IsCopy)
                     {
