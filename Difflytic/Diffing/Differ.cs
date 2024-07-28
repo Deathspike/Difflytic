@@ -4,9 +4,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
+using Difflytic.Diffing.Extensions;
 using Difflytic.Diffing.Hashing;
 using Difflytic.Diffing.Matching;
-using Difflytic.Extensions;
 
 namespace Difflytic.Diffing
 {

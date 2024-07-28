@@ -1,6 +1,6 @@
 ﻿using System.IO;
 
-namespace Difflytic.Extensions
+namespace Difflytic.Diffing.Extensions
 {
     public static class StreamExtensions
     {

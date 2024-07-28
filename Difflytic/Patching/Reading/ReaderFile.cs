@@ -5,7 +5,6 @@
         #region Properties
 
         public long DataPosition { get; set; } = -1;
-
         public long HeaderPosition { get; set; } = -1;
 
         #endregion
