@@ -19,7 +19,7 @@ namespace Difflytic.Patching.Reading
             _oldStream = oldStream;
         }
 
-        public static ReaderFileStream Create(string diffPath, string oldPath, ReaderFile file)
+        public static ReaderFileStream Create(string diffPath, ReaderFile file, string oldPath)
         {
             var diffStream = new BufferedStream(File.OpenRead(diffPath));
             var fileHeader = FileHeader.Create(file.DataPosition, diffStream, file.HeaderCount, file.HeaderPosition);

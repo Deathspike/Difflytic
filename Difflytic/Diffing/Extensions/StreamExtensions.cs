@@ -6,9 +6,9 @@ namespace Difflytic.Diffing.Extensions
     {
         #region Statics
 
-        public static void CopyExactly(this Stream sourceStream, Stream destinationStream, long count)
+        public static void CopyExactly(this Stream sourceStream, Stream destinationStream, long numberOfBytes)
         {
-            for (var i = 0; i < count; i++)
+            for (var i = 0; i < numberOfBytes; i++)
             {
                 var value = sourceStream.ReadByte();
                 if (value == -1) throw new EndOfStreamException();

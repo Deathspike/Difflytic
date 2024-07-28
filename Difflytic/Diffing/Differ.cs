@@ -35,7 +35,7 @@ namespace Difflytic.Diffing
             var headerCounts = new ConcurrentDictionary<string, long>();
             WriteFiles(hashTable, headerCounts, newPaths, oldPath);
             MergeFiles(headerCounts, newPaths, oldPath);
-            File.Move(oldPath + ".diffl.tmp", diffPath, true);
+            File.Move(oldPath + ".diff.tmp", diffPath, true);
         }
 
         private HashTable CreateHashTable(string oldPath)
@@ -47,7 +47,7 @@ namespace Difflytic.Diffing
 
         private void MergeFiles(ConcurrentDictionary<string, long> headerCounts, IReadOnlyCollection<string> newPaths, string oldPath)
         {
-            using var outputStream = new BufferedStream(File.OpenWrite(oldPath + ".diffl.tmp"));
+            using var outputStream = new BufferedStream(File.OpenWrite(oldPath + ".diff.tmp"));
             using var outputWriter = new BinaryWriter(outputStream, Encoding.UTF8, true);
             outputStream.SetLength(0);
             outputWriter.Write("difflytic"u8);
