@@ -1,1 +1,7 @@
-﻿<Project Sdk="Microsoft.NET.Sdk"/>
+﻿<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <Authors>Deathspike</Authors>
+        <Description>Difflytic creates and applies binary diffs, supporting multiple files and streaming diff access.</Description>
+        <RepositoryUrl>https://github.com/Deathspike/Difflytic</RepositoryUrl>
+    </PropertyGroup>
+</Project>
