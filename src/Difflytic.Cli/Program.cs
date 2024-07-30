@@ -9,9 +9,6 @@ namespace Difflytic.Cli
 {
     public static class Program
     {
-        private const uint MaximumHashTableSize = 6553600;
-        private const uint MinimumBlockSize = 16;
-
         #region Statics
 
         public static void Main(string[] args)
@@ -29,7 +26,7 @@ namespace Difflytic.Cli
                 var diffPath = options.Data[^1];
                 var newPaths = options.Data.Slice(1, options.Data.Count - 2);
                 var oldPath = options.Data[0];
-                var blockSize = GetBlockSize(options.BlockSize, oldPath);
+                var blockSize = options.BlockSize > 0 ? options.BlockSize : BlockSize.GetSize(oldPath);
                 new Differ(blockSize, HashType.Adler32).Diff(diffPath, newPaths, oldPath);
             }
             else if (options.Data.Count == 2)
@@ -39,12 +36,6 @@ namespace Difflytic.Cli
                 var outputPath = Path.GetDirectoryName(diffPath) ?? Environment.CurrentDirectory;
                 Patcher.Patch(diffPath, oldPath, outputPath);
             }
-        }
-
-        private static int GetBlockSize(int blockSize, string oldPath)
-        {
-            if (blockSize > 0) return blockSize;
-            return (int)Math.Max(MinimumBlockSize, new FileInfo(oldPath).Length / MaximumHashTableSize);
         }
 
         private static string GetVersion()
