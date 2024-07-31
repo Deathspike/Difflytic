@@ -25,7 +25,7 @@ jobs:
             os: windows-latest
             target: win-x64
             file: difflytic-win-x64.exe
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{matrix.os}}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -36,8 +36,8 @@ jobs:
       - name: Restore
         run: dotnet restore src
       - name: Build
-        run: dotnet publish src -c Release -r ${{ matrix.target }}
+        run: dotnet publish src -c Release -r ${{matrix.target}}
       - name: Upload
         uses: softprops/action-gh-release@v1
         with:
-          files: src/Difflytic.Cli/bin/Release/net8.0/${{ matrix.target }}/publish/${{ matrix.file }}
+          files: src/Difflytic.Cli/bin/Release/net8.0/${{matrix.target}}/publish/${{matrix.file}}
