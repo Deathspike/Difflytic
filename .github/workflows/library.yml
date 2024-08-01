@@ -1,0 +1,20 @@
+name: library
+on:
+  push:
+    tags: [v*]
+jobs:
+  library:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 8.0.302
+      - name: Restore
+        run: dotnet restore src
+      - name: Build
+        run: dotnet pack src
+      - name: Upload
+        run: dotnet nuget push src/Difflytic/bin/Release/Difflytic.1.0.0.nupkg --api-key ${{secrets.NUGET_API_KEY}} --source https://api.nuget.org/v3/index.json

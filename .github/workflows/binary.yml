@@ -1,9 +1,9 @@
-name: build
+name: binary
 on:
   push:
     tags: [v*]
 jobs:
-  build:
+  binary:
     permissions: write-all
     strategy:
       matrix:
