@@ -7,7 +7,7 @@ jobs:
     permissions: write-all
     strategy:
       matrix:
-        kind: [linux, macos-arm64, macos-x64, windows]
+        kind: [linux, macos-arm64, windows]
         include:
           - kind: linux
             os: ubuntu-latest
@@ -17,10 +17,6 @@ jobs:
             os: macos-latest
             target: osx-arm64
             file: difflytic-macos-arm64
-          - kind: macos-x64
-            os: macos-latest-large
-            target: osx-x64
-            file: difflytic-macos-x64
           - kind: windows
             os: windows-latest
             target: win-x64
