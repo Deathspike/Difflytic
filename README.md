@@ -10,10 +10,12 @@ Difflytic creates and applies binary diffs, supporting multiple files and stream
 
 You can download pre-built binary releases from the [Releases](https://github.com/Deathspike/Difflytic/releases) page:
 
-* `difflytic-dotnet`: Platform-agnostic build. Requires `.NET 8`.
-* `difflytic-linux-x64`: _Linux (x64)_ native build. No dependencies.
-* `difflytic-macos-arm64`: _MacOS (ARM)_ native build. No dependencies.
-* `difflytic-win-x64`: _Windows (x64)_ native build. No dependencies.
+- `difflytic-linux`: _Linux (Any CPU)_ build. Requires `.NET 8`.
+- `difflytic-linux-x64`: _Linux (x64)_ native build. No dependencies.
+- `difflytic-macos`: _MacOS (Any CPU)_ build. Requires `.NET 8`.
+- `difflytic-macos-arm64`: _MacOS (ARM64)_ native build. No dependencies.
+- `difflytic-win`: _Windows (Any CPU)_ build. Requires `.NET 8`.
+- `difflytic-win-x64`: _Windows (x64)_ native build. No dependencies.
 
 #### Building from Source
 
@@ -27,20 +29,20 @@ Depending on the operating system and architecture, the binary may be named diff
 
 To create a diff file from an old file and one or more new files:
 
-    difflytic-dotnet <oldPath> <newPaths...> <diffPath>
+    difflytic-linux <oldPath> <newPaths...> <diffPath>
 
-* `oldPath`: Path to the old file.
-* `newPaths`: Path(s) to one or more new files.
-* `diffPath`: Path where the diff file will be saved.
+- `oldPath`: Path to the old file.
+- `newPaths`: Path(s) to one or more new files.
+- `diffPath`: Path where the diff file will be saved.
 
 #### Extracting a Diff
 
 To extract the new files from a diff file:
 
-    difflytic-dotnet <oldPath> <diffPath>
+    difflytic-linux <oldPath> <diffPath>
 
-* `oldPath`: Path to the old file.
-* `diffPath`: Path to the diff file.
+- `oldPath`: Path to the old file.
+- `diffPath`: Path to the diff file.
 
 The new files will be saved next to the diff file.
 

@@ -7,24 +7,32 @@ jobs:
     permissions: write-all
     strategy:
       matrix:
-        kind: [dotnet, linux, macos-arm64, windows]
+        kind: [linux, linux-x64, osx, osx-arm64, windows, windows-x64]
         include:
-          - kind: dotnet
-            os: ubuntu-latest
-            config: -p:PublishSingleFile=true -p:SelfContained=false
-            upload: src/Difflytic.Cli/bin/Release/net8.0/linux-x64/publish/difflytic-dotnet
           - kind: linux
             os: ubuntu-latest
+            config: -p:PublishSingleFile=true -p:SelfContained=false -r linux-x64
+            upload: linux-x64/publish/difflytic-linux
+          - kind: linux-x64
+            os: ubuntu-latest
             config: -p:PublishAot=true -r linux-x64
-            upload: src/Difflytic.Cli/bin/Release/net8.0/linux-x64/publish/difflytic-linux-x64
-          - kind: macos-arm64
+            upload: linux-x64/publish/difflytic-linux-x64
+          - kind: osx
+            os: macos-latest
+            config: -p:PublishSingleFile=true -p:SelfContained=false -r osx-arm64
+            upload: osx-arm64/publish/difflytic-osx
+          - kind: osx-arm64
             os: macos-latest
             config: -p:PublishAot=true -r osx-arm64
-            upload: src/Difflytic.Cli/bin/Release/net8.0/osx-arm64/publish/difflytic-macos-arm64
+            upload: osx-arm64/publish/difflytic-osx-arm64
           - kind: windows
             os: windows-latest
+            config: -p:PublishSingleFile=true -p:SelfContained=false -r win-x64
+            upload: win-x64/publish/difflytic-win.exe
+          - kind: windows-x64
+            os: windows-latest
             config: -p:PublishAot=true -r win-x64
-            upload: src/Difflytic.Cli/bin/Release/net8.0/win-x64/publish/difflytic-win-x64.exe
+            upload: win-x64/publish/difflytic-win-x64.exe
     runs-on: ${{matrix.os}}
     steps:
       - name: Checkout
@@ -40,4 +48,4 @@ jobs:
       - name: Upload
         uses: softprops/action-gh-release@v1
         with:
-          files: ${{matrix.upload}}
+          files: src/Difflytic.Cli/bin/Release/net8.0/${{matrix.upload}}

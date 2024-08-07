@@ -3,17 +3,23 @@
         <IsPackable>false</IsPackable>
         <OutputType>Exe</OutputType>
     </PropertyGroup>
-    <PropertyGroup Condition="'$(PublishSingleFile)' == true">
-        <AssemblyName>difflytic-dotnet</AssemblyName>
-    </PropertyGroup>
     <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'linux-x64'">
         <AssemblyName>difflytic-linux-x64</AssemblyName>
     </PropertyGroup>
+    <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'linux-x64' and '$(PublishSingleFile)' == true">
+        <AssemblyName>difflytic-linux</AssemblyName>
+    </PropertyGroup>
     <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'osx-arm64'">
-        <AssemblyName>difflytic-macos-arm64</AssemblyName>
+        <AssemblyName>difflytic-osx-arm64</AssemblyName>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'osx-arm64' and '$(PublishSingleFile)' == true">
+        <AssemblyName>difflytic-osx</AssemblyName>
     </PropertyGroup>
     <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'win-x64'">
         <AssemblyName>difflytic-win-x64</AssemblyName>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'win-x64' and '$(PublishSingleFile)' == true">
+        <AssemblyName>difflytic-win</AssemblyName>
     </PropertyGroup>
     <ItemGroup>
         <ProjectReference Include="..\Difflytic\Difflytic.csproj"/>
