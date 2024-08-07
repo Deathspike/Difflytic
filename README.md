@@ -8,7 +8,12 @@ Difflytic creates and applies binary diffs, supporting multiple files and stream
 
 #### Downloading Releases
 
-You can download pre-built binary releases from the [Releases](https://github.com/Deathspike/Difflytic/releases) page.
+You can download pre-built binary releases from the [Releases](https://github.com/Deathspike/Difflytic/releases) page:
+
+* `difflytic-dotnet`: Platform-agnostic build. Requires `.NET 8`.
+* `difflytic-linux-x64`: _Linux (x64)_ native build. No dependencies.
+* `difflytic-macos-arm64`: _MacOS (ARM)_ native build. No dependencies.
+* `difflytic-win-x64`: _Windows (x64)_ native build. No dependencies.
 
 #### Building from Source
 
@@ -22,7 +27,7 @@ Depending on the operating system and architecture, the binary may be named diff
 
 To create a diff file from an old file and one or more new files:
 
-    difflytic <oldPath> <newPaths...> <diffPath>
+    difflytic-dotnet <oldPath> <newPaths...> <diffPath>
 
 * `oldPath`: Path to the old file.
 * `newPaths`: Path(s) to one or more new files.
@@ -32,7 +37,7 @@ To create a diff file from an old file and one or more new files:
 
 To extract the new files from a diff file:
 
-    difflytic <oldPath> <diffPath>
+    difflytic-dotnet <oldPath> <diffPath>
 
 * `oldPath`: Path to the old file.
 * `diffPath`: Path to the diff file.

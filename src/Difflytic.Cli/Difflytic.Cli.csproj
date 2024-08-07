@@ -2,16 +2,15 @@
     <PropertyGroup>
         <IsPackable>false</IsPackable>
         <OutputType>Exe</OutputType>
-        <PublishAot>true</PublishAot>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(PublishSingleFile)' == true">
+        <AssemblyName>difflytic-dotnet</AssemblyName>
     </PropertyGroup>
     <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'linux-x64'">
         <AssemblyName>difflytic-linux-x64</AssemblyName>
     </PropertyGroup>
     <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'osx-arm64'">
         <AssemblyName>difflytic-macos-arm64</AssemblyName>
-    </PropertyGroup>
-    <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'osx-x64'">
-        <AssemblyName>difflytic-macos-x64</AssemblyName>
     </PropertyGroup>
     <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'win-x64'">
         <AssemblyName>difflytic-win-x64</AssemblyName>

@@ -7,20 +7,24 @@ jobs:
     permissions: write-all
     strategy:
       matrix:
-        kind: [linux, macos-arm64, windows]
+        kind: [dotnet, linux, macos-arm64, windows]
         include:
+          - kind: dotnet
+            os: ubuntu-latest
+            config: -p:PublishSingleFile=true -p:SelfContained=false
+            upload: src/Difflytic.Cli/bin/Release/net8.0/linux-x64/publish/difflytic-dotnet
           - kind: linux
             os: ubuntu-latest
-            target: linux-x64
-            file: difflytic-linux-x64
+            config: -p:PublishAot=true -r linux-x64
+            upload: src/Difflytic.Cli/bin/Release/net8.0/linux-x64/publish/difflytic-linux-x64
           - kind: macos-arm64
             os: macos-latest
-            target: osx-arm64
-            file: difflytic-macos-arm64
+            config: -p:PublishAot=true -r osx-arm64
+            upload: src/Difflytic.Cli/bin/Release/net8.0/osx-arm64/publish/difflytic-macos-arm64
           - kind: windows
             os: windows-latest
-            target: win-x64
-            file: difflytic-win-x64.exe
+            config: -p:PublishAot=true -r win-x64
+            upload: src/Difflytic.Cli/bin/Release/net8.0/win-x64/publish/difflytic-win-x64.exe
     runs-on: ${{matrix.os}}
     steps:
       - name: Checkout
@@ -30,10 +34,10 @@ jobs:
         with:
           dotnet-version: 8.0.302
       - name: Restore
-        run: dotnet restore src
+        run: dotnet restore src/Difflytic.Cli
       - name: Build
-        run: dotnet publish src -c Release -r ${{matrix.target}}
+        run: dotnet publish src/Difflytic.Cli -c Release ${{matrix.config}}
       - name: Upload
         uses: softprops/action-gh-release@v1
         with:
-          files: src/Difflytic.Cli/bin/Release/net8.0/${{matrix.target}}/publish/${{matrix.file}}
+          files: ${{matrix.upload}}
