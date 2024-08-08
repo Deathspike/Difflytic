@@ -1,4 +1,6 @@
-﻿namespace Difflytic.Hashing.Adler32
+﻿using Difflytic.Hashing.Abstracts;
+
+namespace Difflytic.Hashing.Adler32
 {
     public sealed class Adler32BlockHash : IBlockHash
     {

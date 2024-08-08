@@ -1,4 +1,5 @@
 ﻿using System;
+using Difflytic.Hashing.Abstracts;
 using Difflytic.Hashing.Adler32;
 
 namespace Difflytic.Hashing

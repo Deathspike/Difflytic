@@ -2,7 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using Difflytic.Hashing;
+using Difflytic.Hashing.Abstracts;
 
 namespace Difflytic.Diffing.Matching
 {
