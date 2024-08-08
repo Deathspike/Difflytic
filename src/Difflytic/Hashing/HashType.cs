@@ -2,6 +2,7 @@
 {
     public enum HashType : byte
     {
-        Adler32
+        Adler32,
+        MLCG
     }
 }

@@ -2,7 +2,6 @@
 using System.IO;
 using System.Reflection;
 using Difflytic.Diffing;
-using Difflytic.Hashing;
 using Difflytic.Patching;
 
 namespace Difflytic.Cli
@@ -27,7 +26,7 @@ namespace Difflytic.Cli
                 var newPaths = options.Data.Slice(1, options.Data.Count - 2);
                 var oldPath = options.Data[0];
                 var blockSize = options.BlockSize > 0 ? options.BlockSize : BlockSize.GetSize(oldPath);
-                new Differ(blockSize, HashType.Adler32).Diff(diffPath, newPaths, oldPath);
+                new Differ(blockSize).Diff(diffPath, newPaths, oldPath);
             }
             else if (options.Data.Count == 2)
             {

@@ -1,6 +1,7 @@
 ﻿using System;
 using Difflytic.Hashing.Abstracts;
 using Difflytic.Hashing.Adler32;
+using Difflytic.Hashing.MLCG;
 
 namespace Difflytic.Hashing
 {
@@ -14,6 +15,8 @@ namespace Difflytic.Hashing
             {
                 case HashType.Adler32:
                     return new Adler32BlockHash();
+                case HashType.MLCG:
+                    return new MLCGBlockHash();
                 default:
                     throw new Exception(nameof(CreateBlockHash));
             }
@@ -25,6 +28,8 @@ namespace Difflytic.Hashing
             {
                 case HashType.Adler32:
                     return new Adler32RollingHash(blockSize);
+                case HashType.MLCG:
+                    return new MLCGRollingHash(blockSize);
                 default:
                     throw new Exception(nameof(CreateBlockHash));
             }

@@ -17,7 +17,7 @@ namespace Difflytic.Diffing
 
         #region Constructors
 
-        public Differ(int blockSize, HashType hashType)
+        public Differ(int blockSize, HashType hashType = HashType.MLCG)
         {
             _blockSize = blockSize;
             _hashType = hashType;
