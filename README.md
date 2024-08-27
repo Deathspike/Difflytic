@@ -62,10 +62,10 @@ A block size is required to divide the old file into blocks. If you are unsure a
 var blockSize = BlockSize.GetSize(oldPath);
 ```
 
-Now create a `Differ` using the `Adler32` block hash:
+Now create a `Differ` using the `MLCG` block hash:
 
 ```cs
-var differ = new Differ(blockSize, HashType.Adler32);
+var differ = new Differ(blockSize, HashType.MLCG);
 ```
 
 Then you can create the diff file:
