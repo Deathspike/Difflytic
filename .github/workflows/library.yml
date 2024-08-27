@@ -2,6 +2,7 @@ name: library
 on:
   push:
     tags: [v*]
+  workflow_dispatch:
 jobs:
   library:
     runs-on: ubuntu-latest
@@ -17,4 +18,4 @@ jobs:
       - name: Build
         run: dotnet pack src
       - name: Upload
-        run: dotnet nuget push src/Difflytic/bin/Release/Difflytic.1.0.0.nupkg --api-key ${{secrets.NUGET_API_KEY}} --source https://api.nuget.org/v3/index.json
+        run: dotnet nuget push src/Difflytic/bin/Release/Difflytic.1.1.0.nupkg --api-key ${{secrets.NUGET_API_KEY}} --source https://api.nuget.org/v3/index.json
