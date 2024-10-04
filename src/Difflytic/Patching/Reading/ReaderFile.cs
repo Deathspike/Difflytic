@@ -1,6 +1,6 @@
 ﻿namespace Difflytic.Patching.Reading
 {
-    public sealed record ReaderFile(long DataLength, long HeaderCount, long HeaderLength, string Name)
+    public sealed record ReaderFile(long DataLength, long HeaderCount, long HeaderLength, string Name, FileType Type)
     {
         #region Properties
 

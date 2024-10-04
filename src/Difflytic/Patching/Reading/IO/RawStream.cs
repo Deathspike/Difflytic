@@ -1,30 +1,20 @@
 ﻿using System;
 using System.IO;
 
-namespace Difflytic.Patching.Reading
+namespace Difflytic.Patching.Reading.IO
 {
-    public sealed class ReaderFileStream : Stream
+    public sealed class RawStream : Stream
     {
         private readonly Stream _diffStream;
-        private readonly FileHeader _fileHeader;
-        private readonly Stream _oldStream;
+        private readonly ReaderFile _file;
         private long _position;
 
         #region Constructors
 
-        private ReaderFileStream(Stream diffStream, FileHeader fileHeader, Stream oldStream)
+        public RawStream(Stream diffStream, ReaderFile file)
         {
             _diffStream = diffStream;
-            _fileHeader = fileHeader;
-            _oldStream = oldStream;
-        }
-
-        public static ReaderFileStream Create(string diffPath, ReaderFile file, string oldPath)
-        {
-            var diffStream = new BufferedStream(File.OpenRead(diffPath));
-            var fileHeader = FileHeader.Create(file.DataPosition, diffStream, file.HeaderCount, file.HeaderPosition);
-            var oldStream = new BufferedStream(File.OpenRead(oldPath));
-            return new ReaderFileStream(diffStream, fileHeader, oldStream);
+            _file = file;
         }
 
         #endregion
@@ -36,32 +26,9 @@ namespace Difflytic.Patching.Reading
             if (disposing)
             {
                 _diffStream.Dispose();
-                _oldStream.Dispose();
             }
 
             base.Dispose(disposing);
-        }
-
-        #endregion
-
-        #region Methods
-
-        private int ReadData(byte[] buffer, int count, int offset, long position)
-        {
-            _diffStream.Position = position;
-            var bytesRead = _diffStream.Read(buffer, offset, count);
-            if (bytesRead == 0) return 0;
-            Position += bytesRead;
-            return bytesRead;
-        }
-
-        private int ReadReference(byte[] buffer, int count, int offset, long position)
-        {
-            _oldStream.Position = position;
-            var bytesRead = _oldStream.Read(buffer, offset, count);
-            if (bytesRead == 0) return 0;
-            Position += bytesRead;
-            return bytesRead;
         }
 
         #endregion
@@ -75,19 +42,19 @@ namespace Difflytic.Patching.Reading
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            // Find the block for the position.
-            var block = _fileHeader.Find(_position);
-            if (block == null) return 0;
-
-            // Find the offset within the block.
-            var blockOffset = _position - block.Value.LocalPosition;
-            var maxBytesToRead = block.Value.Length - blockOffset;
+            // Find the maximum bytes.
+            var maxBytesToRead = Length - _position;
             if (maxBytesToRead == 0) return 0;
 
             // Read the requested sequence of bytes.
+            _diffStream.Position = _file.DataPosition + _position;
             var maxCount = maxBytesToRead < int.MaxValue ? Math.Min(count, (int)maxBytesToRead) : count;
-            var position = block.Value.OtherPosition + blockOffset;
-            return block.Value.InData ? ReadData(buffer, maxCount, offset, position) : ReadReference(buffer, maxCount, offset, position);
+            var bytesRead = _diffStream.Read(buffer, offset, maxCount);
+            if (bytesRead == 0) return 0;
+
+            // Update the position.
+            Position += bytesRead;
+            return bytesRead;
         }
 
         public override long Seek(long offset, SeekOrigin origin)
@@ -135,7 +102,7 @@ namespace Difflytic.Patching.Reading
 
         public override long Length
         {
-            get => _fileHeader.Length;
+            get => _file.DataLength;
         }
 
         public override long Position

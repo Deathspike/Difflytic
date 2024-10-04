@@ -2,6 +2,8 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Difflytic.Diffing.Extensions;
@@ -29,10 +31,15 @@ namespace Difflytic.Diffing
 
         public void Diff(string diffPath, IReadOnlyCollection<string> newPaths, string oldPath)
         {
+            Diff(diffPath, newPaths.Select(newPath => new DifferFile(newPath, FileType.Diff)).ToList(), oldPath);
+        }
+
+        public void Diff(string diffPath, IReadOnlyCollection<DifferFile> files, string oldPath)
+        {
             var hashTable = CreateHashTable(oldPath);
             var headerCounts = new ConcurrentDictionary<string, long>();
-            WriteFiles(hashTable, headerCounts, newPaths, oldPath);
-            MergeFiles(hashTable, headerCounts, newPaths, oldPath);
+            WriteFiles(files, hashTable, headerCounts, oldPath);
+            MergeFiles(files, hashTable, headerCounts, oldPath);
             File.Move(oldPath + ".diff.tmp", diffPath, true);
         }
 
@@ -43,81 +50,149 @@ namespace Difflytic.Diffing
             return HashTable.Create(blockHash, _blockSize, oldStream);
         }
 
-        private void MergeFiles(HashTable hashTable, ConcurrentDictionary<string, long> headerCounts, IReadOnlyCollection<string> newPaths, string oldPath)
+        private void MergeFiles(IReadOnlyCollection<DifferFile> files, HashTable hashTable, ConcurrentDictionary<string, long> headerCounts, string oldPath)
         {
             using var outputStream = new BufferedStream(File.OpenWrite(oldPath + ".diff.tmp"));
             using var outputWriter = new BinaryWriter(outputStream, Encoding.UTF8, true);
             outputStream.SetLength(0);
             outputWriter.Write("difflytic"u8);
-            outputWriter.Write((byte)1);
+            outputWriter.Write((byte)2);
             outputWriter.Write((byte)_hashType);
             outputWriter.Write7BitEncodedInt(_blockSize);
             outputWriter.Write(hashTable.FullHash);
-            outputWriter.Write7BitEncodedInt(newPaths.Count);
+            outputWriter.Write7BitEncodedInt(files.Count);
 
-            foreach (var newPath in newPaths)
+            foreach (var file in files)
             {
-                if (!headerCounts.TryGetValue(newPath, out var headerCount)) throw new Exception(nameof(MergeFiles));
-                outputWriter.Write(Path.GetFileName(newPath));
-                outputWriter.Write7BitEncodedInt64(headerCount);
-                outputWriter.Write7BitEncodedInt64(new FileInfo(newPath + ".diffh.tmp").Length);
-                outputWriter.Write7BitEncodedInt64(new FileInfo(newPath + ".diffd.tmp").Length);
+                outputWriter.Write(Path.GetFileName(file.FilePath));
+                outputWriter.Write((byte)file.Type);
+
+                switch (file.Type)
+                {
+                    case FileType.Diff:
+                    {
+                        if (!headerCounts.TryGetValue(file.FilePath, out var headerCount)) throw new Exception(nameof(MergeFiles));
+                        outputWriter.Write7BitEncodedInt64(headerCount);
+                        outputWriter.Write7BitEncodedInt64(new FileInfo(file.FilePath + ".diffh.tmp").Length);
+                        outputWriter.Write7BitEncodedInt64(new FileInfo(file.FilePath + ".diffd.tmp").Length);
+                        break;
+                    }
+                    case FileType.Raw:
+                    {
+                        outputWriter.Write7BitEncodedInt64(new FileInfo(file.FilePath).Length);
+                        break;
+                    }
+                    case FileType.RawGZip:
+                    {
+                        outputWriter.Write7BitEncodedInt64(new FileInfo(file.FilePath + ".gz.tmp").Length);
+                        break;
+                    }
+                    default:
+                    {
+                        throw new ArgumentOutOfRangeException(nameof(MergeFiles));
+                    }
+                }
             }
 
-            foreach (var newPath in newPaths)
+            foreach (var file in files)
             {
-                using var headerStream = new BufferedStream(File.OpenRead(newPath + ".diffh.tmp"));
-                using var dataStream = new BufferedStream(File.OpenRead(newPath + ".diffd.tmp"));
-                headerStream.CopyTo(outputStream);
-                dataStream.CopyTo(outputStream);
+                switch (file.Type)
+                {
+                    case FileType.Diff:
+                    {
+                        using var headerStream = new BufferedStream(File.OpenRead(file.FilePath + ".diffh.tmp"));
+                        using var dataStream = new BufferedStream(File.OpenRead(file.FilePath + ".diffd.tmp"));
+                        headerStream.CopyTo(outputStream);
+                        dataStream.CopyTo(outputStream);
+                        break;
+                    }
+                    case FileType.Raw:
+                    {
+                        using var dataStream = new BufferedStream(File.OpenRead(file.FilePath));
+                        dataStream.CopyTo(outputStream);
+                        break;
+                    }
+                    case FileType.RawGZip:
+                    {
+                        using var dataStream = new BufferedStream(File.OpenRead(file.FilePath + ".gz.tmp"));
+                        dataStream.CopyTo(outputStream);
+                        break;
+                    }
+                }
             }
 
-            foreach (var newPath in newPaths)
+            foreach (var file in files)
             {
-                File.Delete(newPath + ".diffh.tmp");
-                File.Delete(newPath + ".diffd.tmp");
+                switch (file.Type)
+                {
+                    case FileType.Diff:
+                    {
+                        File.Delete(file.FilePath + ".diffh.tmp");
+                        File.Delete(file.FilePath + ".diffd.tmp");
+                        break;
+                    }
+                    case FileType.RawGZip:
+                    {
+                        File.Delete(file.FilePath + ".gz.tmp");
+                        break;
+                    }
+                }
             }
         }
 
-        private void WriteFiles(HashTable hashTable, ConcurrentDictionary<string, long> headerCounts, IEnumerable<string> newPaths, string oldPath)
+        private void WriteFiles(IReadOnlyCollection<DifferFile> files, HashTable hashTable, ConcurrentDictionary<string, long> headerCounts, string oldPath)
         {
-            Parallel.ForEach(newPaths, newPath =>
+            Parallel.ForEach(files, file =>
             {
-                // Configure the file streams.
-                using var newStream = new BufferedStream(File.OpenRead(newPath));
-                using var oldStream = new BufferedStream(File.OpenRead(oldPath));
-                var headerCount = 0;
-
-                // Configure the data and header streams.
-                using var dataStream = new BufferedStream(File.OpenWrite(newPath + ".diffd.tmp"));
-                using var headerStream = new BufferedStream(File.OpenWrite(newPath + ".diffh.tmp"));
-                using var headerWriter = new BinaryWriter(headerStream, Encoding.UTF8, true);
-                dataStream.SetLength(0);
-                headerStream.SetLength(0);
-
-                // Match the blocks.
-                foreach (var block in new Matcher(_blockSize, hashTable, newStream, oldStream, HashProvider.CreateRollingHash(_blockSize, _hashType)))
+                switch (file.Type)
                 {
-                    if (block.IsCopy)
+                    case FileType.Diff:
                     {
-                        headerWriter.Write(true);
-                        headerWriter.Write7BitEncodedInt64(block.Length);
-                        newStream.Position = block.NewPosition;
-                        newStream.CopyExactly(dataStream, block.Length);
-                    }
-                    else
-                    {
-                        headerWriter.Write(false);
-                        headerWriter.Write7BitEncodedInt64(block.Length);
-                        headerWriter.Write7BitEncodedInt64(block.OldPosition);
-                    }
+                        // Configure the file streams.
+                        using var newStream = new BufferedStream(File.OpenRead(file.FilePath));
+                        using var oldStream = new BufferedStream(File.OpenRead(oldPath));
+                        var headerCount = 0;
 
-                    headerCount++;
+                        // Configure the data and header streams.
+                        using var dataStream = new BufferedStream(File.OpenWrite(file.FilePath + ".diffd.tmp"));
+                        using var headerStream = new BufferedStream(File.OpenWrite(file.FilePath + ".diffh.tmp"));
+                        using var headerWriter = new BinaryWriter(headerStream, Encoding.UTF8, true);
+                        dataStream.SetLength(0);
+                        headerStream.SetLength(0);
+
+                        // Match the blocks.
+                        foreach (var block in new Matcher(_blockSize, hashTable, newStream, oldStream, HashProvider.CreateRollingHash(_blockSize, _hashType)))
+                        {
+                            if (block.IsCopy)
+                            {
+                                headerWriter.Write(true);
+                                headerWriter.Write7BitEncodedInt64(block.Length);
+                                newStream.Position = block.NewPosition;
+                                newStream.CopyExactly(dataStream, block.Length);
+                            }
+                            else
+                            {
+                                headerWriter.Write(false);
+                                headerWriter.Write7BitEncodedInt64(block.Length);
+                                headerWriter.Write7BitEncodedInt64(block.OldPosition);
+                            }
+
+                            headerCount++;
+                        }
+
+                        // Save the header count.
+                        if (headerCounts.TryAdd(file.FilePath, headerCount)) break;
+                        throw new Exception(nameof(WriteFiles));
+                    }
+                    case FileType.RawGZip:
+                    {
+                        using var dataStream = new BufferedStream(File.OpenWrite(file.FilePath + ".gz.tmp"));
+                        using var compressStream = new GZipStream(dataStream, CompressionMode.Compress);
+                        using var newStream = new BufferedStream(File.OpenRead(file.FilePath));
+                        newStream.CopyTo(compressStream);
+                        break;
+                    }
                 }
-
-                // Save the header count.
-                if (headerCounts.TryAdd(newPath, headerCount)) return;
-                throw new Exception(nameof(WriteFiles));
             });
         }
 

@@ -1,14 +1,14 @@
 ﻿using System.Collections.Generic;
 
-namespace Difflytic.Patching.Reading
+namespace Difflytic.Patching.Reading.IO
 {
-    public sealed class FileHeaderEntryFind : IComparer<FileHeaderEntry>
+    public sealed class DiffStreamHeaderEntryFind : IComparer<DiffStreamHeaderEntry>
     {
-        public static readonly FileHeaderEntryFind Instance = new();
+        public static readonly DiffStreamHeaderEntryFind Instance = new();
 
         #region Constructors
 
-        private FileHeaderEntryFind()
+        private DiffStreamHeaderEntryFind()
         {
         }
 
@@ -16,7 +16,7 @@ namespace Difflytic.Patching.Reading
 
         #region Implementation of IComparer<FileHeaderEntry>
 
-        public int Compare(FileHeaderEntry x, FileHeaderEntry y)
+        public int Compare(DiffStreamHeaderEntry x, DiffStreamHeaderEntry y)
         {
             if (y.LocalPosition >= x.LocalPosition && y.LocalPosition < x.LocalPosition + x.Length) return 0;
             if (y.LocalPosition > x.LocalPosition) return -1;

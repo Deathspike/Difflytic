@@ -39,7 +39,7 @@ namespace Difflytic.Patching.Reading
             var signature = Encoding.ASCII.GetString(diffReader.ReadBytes(9));
             var version = diffReader.ReadByte();
             var hashType = diffReader.ReadByte();
-            if (signature != "difflytic" || version != 1 || !Enum.IsDefined(typeof(HashType), hashType)) throw new Exception(nameof(Init));
+            if (signature != "difflytic" || version > 2 || !Enum.IsDefined(typeof(HashType), hashType)) throw new Exception(nameof(Init));
 
             // Validate the file hash.
             var blockSize = diffReader.Read7BitEncodedInt();
@@ -47,19 +47,34 @@ namespace Difflytic.Patching.Reading
             if (!skipValidate) ValidateFile(blockSize, fullHash, hashType, oldPath);
 
             // Read the files.
-            ReadFiles(diffReader);
+            ReadFiles(diffReader, version);
             UpdateFiles(diffStream);
         }
 
-        private void ReadFiles(BinaryReader diffReader)
+        private void ReadFiles(BinaryReader diffReader, byte version)
         {
             for (var i = diffReader.Read7BitEncodedInt(); i > 0; i--)
             {
                 var name = diffReader.ReadString();
-                var headerCount = diffReader.Read7BitEncodedInt64();
-                var headerLength = diffReader.Read7BitEncodedInt64();
-                var dataLength = diffReader.Read7BitEncodedInt64();
-                _files.Add(new ReaderFile(dataLength, headerCount, headerLength, name));
+                var type = version >= 2 ? (FileType)diffReader.ReadByte() : FileType.Diff;
+
+                switch (type)
+                {
+                    case FileType.Diff:
+                    {
+                        var headerCount = diffReader.Read7BitEncodedInt64();
+                        var headerLength = diffReader.Read7BitEncodedInt64();
+                        var dataLength = diffReader.Read7BitEncodedInt64();
+                        _files.Add(new ReaderFile(dataLength, headerCount, headerLength, name, type));
+                        break;
+                    }
+                    default:
+                    {
+                        var dataLength = diffReader.Read7BitEncodedInt64();
+                        _files.Add(new ReaderFile(dataLength, 0, 0, name, type));
+                        break;
+                    }
+                }
             }
         }
 

@@ -2,22 +2,22 @@
 using System.IO;
 using System.Text;
 
-namespace Difflytic.Patching.Reading
+namespace Difflytic.Patching.Reading.IO
 {
-    public sealed class FileHeader
+    public sealed class DiffStreamHeader
     {
-        private readonly FileHeaderEntry[] _entries;
+        private readonly DiffStreamHeaderEntry[] _entries;
 
         #region Constructors
 
-        private FileHeader(long headerCount)
+        private DiffStreamHeader(long headerCount)
         {
-            _entries = new FileHeaderEntry[headerCount];
+            _entries = new DiffStreamHeaderEntry[headerCount];
         }
 
-        public static FileHeader Create(long dataPosition, Stream diffStream, long headerCount, long headerPosition)
+        public static DiffStreamHeader Create(long dataPosition, Stream diffStream, long headerCount, long headerPosition)
         {
-            var fileHeader = new FileHeader(headerCount);
+            var fileHeader = new DiffStreamHeader(headerCount);
             diffStream.Position = headerPosition;
             fileHeader.Init(dataPosition, diffStream);
             return fileHeader;
@@ -27,9 +27,9 @@ namespace Difflytic.Patching.Reading
 
         #region Methods
 
-        public FileHeaderEntry? Find(long localPosition)
+        public DiffStreamHeaderEntry? Find(long localPosition)
         {
-            var index = Array.BinarySearch(_entries, new FileHeaderEntry { LocalPosition = localPosition }, FileHeaderEntryFind.Instance);
+            var index = Array.BinarySearch(_entries, new DiffStreamHeaderEntry { LocalPosition = localPosition }, DiffStreamHeaderEntryFind.Instance);
             if (index < 0) return null;
             return _entries[index];
         }
