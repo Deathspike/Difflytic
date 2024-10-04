@@ -62,10 +62,10 @@ A block size is required to divide the old file into blocks. If you are unsure a
 var blockSize = BlockSize.GetSize(oldPath);
 ```
 
-Now create a `Differ` using the `MLCG` block hash:
+Now create a `Differ` using the default `MLCG` block hash:
 
 ```cs
-var differ = new Differ(blockSize, HashType.MLCG);
+var differ = new Differ(blockSize);
 ```
 
 Then you can create the diff file:
@@ -96,10 +96,10 @@ Now you can iterate over the new files in the diff file:
 foreach (var file in reader) {}
 ```
 
-Then you can open a new file as a randomly accessible stream:
+Then you can open a new file as a stream:
 
 ```cs
-using var stream = ReaderFileStream.Create(diffPath, file, oldPath);
+using var stream = file.Open(diffPath, oldPath);
 ```
 
 ## Contributions
