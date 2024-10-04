@@ -4,6 +4,6 @@
     {
         Diff,
         Raw = 2,
-        RawGZip,
+        RawGZip
     }
 }

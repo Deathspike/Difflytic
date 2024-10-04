@@ -14,7 +14,7 @@ namespace Difflytic.Patching.Reading.IO
 
         #endregion
 
-        #region Implementation of IComparer<FileHeaderEntry>
+        #region Implementation of IComparer<DiffStreamHeaderEntry>
 
         public int Compare(DiffStreamHeaderEntry x, DiffStreamHeaderEntry y)
         {
