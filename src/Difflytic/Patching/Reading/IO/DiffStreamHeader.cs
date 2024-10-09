@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Text;
+using Microsoft.Win32.SafeHandles;
 
 namespace Difflytic.Patching.Reading.IO
 {
@@ -15,11 +16,10 @@ namespace Difflytic.Patching.Reading.IO
             _entries = new DiffStreamHeaderEntry[headerCount];
         }
 
-        public static DiffStreamHeader Create(long dataPosition, Stream diffStream, long headerCount, long headerPosition)
+        public static DiffStreamHeader Create(long dataPosition, SafeFileHandle diffHandle, long headerCount, long headerPosition)
         {
             var fileHeader = new DiffStreamHeader(headerCount);
-            diffStream.Position = headerPosition;
-            fileHeader.Init(dataPosition, diffStream);
+            fileHeader.Init(dataPosition, diffHandle, headerPosition);
             return fileHeader;
         }
 
@@ -34,12 +34,14 @@ namespace Difflytic.Patching.Reading.IO
             return _entries[index];
         }
 
-        private void Init(long dataPosition, Stream diffStream)
+        private void Init(long dataPosition, SafeFileHandle diffHandle, long headerPosition)
         {
+            using var diffStream = new FileHandleStream(diffHandle, false);
             using var diffReader = new BinaryReader(diffStream, Encoding.UTF8, true);
             var dataOffset = 0L;
+            var i = 0;
 
-            for (var i = 0; i < _entries.Length; i++)
+            for (diffStream.Position = headerPosition; i < _entries.Length; i++)
             {
                 if (diffReader.ReadBoolean())
                 {

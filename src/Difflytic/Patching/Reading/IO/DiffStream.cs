@@ -1,22 +1,25 @@
 ﻿using System;
 using System.IO;
+using Microsoft.Win32.SafeHandles;
 
 namespace Difflytic.Patching.Reading.IO
 {
     public sealed class DiffStream : Stream
     {
-        private readonly Stream _diffStream;
+        private readonly SafeFileHandle _diffHandle;
         private readonly DiffStreamHeader _header;
-        private readonly Stream _oldStream;
+        private readonly SafeFileHandle _oldHandle;
+        private readonly bool _ownsHandle;
         private long _position;
 
         #region Constructors
 
-        public DiffStream(Stream diffStream, DiffStreamHeader header, Stream oldStream)
+        public DiffStream(SafeFileHandle diffHandle, DiffStreamHeader header, SafeFileHandle oldHandle, bool ownsHandle = true)
         {
-            _diffStream = diffStream;
+            _diffHandle = diffHandle;
             _header = header;
-            _oldStream = oldStream;
+            _oldHandle = oldHandle;
+            _ownsHandle = ownsHandle;
         }
 
         #endregion
@@ -25,10 +28,10 @@ namespace Difflytic.Patching.Reading.IO
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing)
+            if (disposing && _ownsHandle)
             {
-                _diffStream.Dispose();
-                _oldStream.Dispose();
+                _diffHandle.Dispose();
+                _oldHandle.Dispose();
             }
 
             base.Dispose(disposing);
@@ -40,8 +43,7 @@ namespace Difflytic.Patching.Reading.IO
 
         private int ReadData(byte[] buffer, int count, int offset, long position)
         {
-            _diffStream.Position = position;
-            var bytesRead = _diffStream.Read(buffer, offset, count);
+            var bytesRead = RandomAccess.Read(_diffHandle, new Span<byte>(buffer, offset, count), position);
             if (bytesRead == 0) return 0;
             Position += bytesRead;
             return bytesRead;
@@ -49,8 +51,7 @@ namespace Difflytic.Patching.Reading.IO
 
         private int ReadReference(byte[] buffer, int count, int offset, long position)
         {
-            _oldStream.Position = position;
-            var bytesRead = _oldStream.Read(buffer, offset, count);
+            var bytesRead = RandomAccess.Read(_oldHandle, new Span<byte>(buffer, offset, count), position);
             if (bytesRead == 0) return 0;
             Position += bytesRead;
             return bytesRead;

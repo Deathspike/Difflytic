@@ -15,20 +15,20 @@ namespace Difflytic.Patching.Reading
             {
                 case FileType.Diff:
                 {
-                    var diffStream = new BufferedStream(File.OpenRead(diffPath));
-                    var header = DiffStreamHeader.Create(file.DataPosition, diffStream, file.HeaderCount, file.HeaderPosition);
-                    var oldStream = new BufferedStream(File.OpenRead(oldPath));
-                    return new DiffStream(diffStream, header, oldStream);
+                    var diffHandle = File.OpenHandle(diffPath);
+                    var header = DiffStreamHeader.Create(file.DataPosition, diffHandle, file.HeaderCount, file.HeaderPosition);
+                    var fileHandle = File.OpenHandle(oldPath);
+                    return new DiffStream(diffHandle, header, fileHandle);
                 }
                 case FileType.Raw:
                 {
-                    var diffStream = new BufferedStream(File.OpenRead(diffPath));
-                    return new RawStream(diffStream, file);
+                    var diffHandle = File.OpenHandle(diffPath);
+                    return new RawStream(diffHandle, file);
                 }
                 case FileType.RawGZip:
                 {
-                    var diffStream = new BufferedStream(File.OpenRead(diffPath));
-                    var rawStream = new RawStream(diffStream, file);
+                    var diffHandle = File.OpenHandle(diffPath);
+                    var rawStream = new RawStream(diffHandle, file);
                     return new GZipStream(rawStream, CompressionMode.Decompress);
                 }
                 default:
