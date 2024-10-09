@@ -16,8 +16,9 @@ namespace Difflytic.Patching.Reading
                 case FileType.Diff:
                 {
                     var diffStream = new BufferedStream(File.OpenRead(diffPath));
+                    var header = DiffStreamHeader.Create(file.DataPosition, diffStream, file.HeaderCount, file.HeaderPosition);
                     var oldStream = new BufferedStream(File.OpenRead(oldPath));
-                    return DiffStream.Create(diffStream, file, oldStream);
+                    return new DiffStream(diffStream, header, oldStream);
                 }
                 case FileType.Raw:
                 {

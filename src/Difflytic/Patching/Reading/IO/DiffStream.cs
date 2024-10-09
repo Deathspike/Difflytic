@@ -12,17 +12,11 @@ namespace Difflytic.Patching.Reading.IO
 
         #region Constructors
 
-        private DiffStream(Stream diffStream, DiffStreamHeader header, Stream oldStream)
+        public DiffStream(Stream diffStream, DiffStreamHeader header, Stream oldStream)
         {
             _diffStream = diffStream;
             _header = header;
             _oldStream = oldStream;
-        }
-
-        public static DiffStream Create(Stream diffStream, ReaderFile file, Stream oldStream)
-        {
-            var header = DiffStreamHeader.Create(file.DataPosition, diffStream, file.HeaderCount, file.HeaderPosition);
-            return new DiffStream(diffStream, header, oldStream);
         }
 
         #endregion
