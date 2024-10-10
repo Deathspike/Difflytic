@@ -8,7 +8,7 @@ namespace Difflytic.Cli
 
         private Options()
         {
-            Data = new List<string>();
+            Data = [];
         }
 
         public static Options Create(string[] args)
@@ -29,13 +29,17 @@ namespace Difflytic.Cli
                 switch (args[i])
                 {
                     case "--block-size":
+                    {
                         if (i + 1 >= args.Count || !int.TryParse(args[i + 1], out var blockSize)) break;
                         BlockSize = blockSize;
                         i++;
                         break;
+                    }
                     default:
+                    {
                         Data.Add(args[i]);
                         break;
+                    }
                 }
             }
         }

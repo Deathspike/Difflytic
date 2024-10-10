@@ -4,32 +4,16 @@ using Microsoft.Win32.SafeHandles;
 
 namespace Difflytic.Patching.Reading.Utilities
 {
-    internal sealed class FileHandleStream : Stream
+    public sealed class FileHandleStream : Stream
     {
         private readonly SafeFileHandle _diffHandle;
-        private readonly bool _ownsHandle;
         private long _position;
 
         #region Constructors
 
-        public FileHandleStream(SafeFileHandle diffHandle, bool ownsHandle = true)
+        public FileHandleStream(SafeFileHandle diffHandle)
         {
             _diffHandle = diffHandle;
-            _ownsHandle = ownsHandle;
-        }
-
-        #endregion
-
-        #region Destructors
-
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing && _ownsHandle)
-            {
-                _diffHandle.Dispose();
-            }
-
-            base.Dispose(disposing);
         }
 
         #endregion
@@ -44,8 +28,7 @@ namespace Difflytic.Patching.Reading.Utilities
         public override int Read(byte[] buffer, int offset, int count)
         {
             var bytesRead = RandomAccess.Read(_diffHandle, new Span<byte>(buffer, offset, count), _position);
-            if (bytesRead == 0) return 0;
-            Position += bytesRead;
+            _position += bytesRead;
             return bytesRead;
         }
 
@@ -54,13 +37,20 @@ namespace Difflytic.Patching.Reading.Utilities
             switch (origin)
             {
                 case SeekOrigin.Begin:
+                {
                     Position = offset;
                     break;
+                }
                 case SeekOrigin.Current:
+                {
                     Position += offset;
                     break;
+                }
                 case SeekOrigin.End:
-                    throw new NotSupportedException();
+                {
+                    Position = Length - offset;
+                    break;
+                }
             }
 
             return _position;
@@ -93,13 +83,13 @@ namespace Difflytic.Patching.Reading.Utilities
 
         public override long Length
         {
-            get => throw new NotSupportedException();
+            get => RandomAccess.GetLength(_diffHandle);
         }
 
         public override long Position
         {
             get => _position;
-            set => _position = value;
+            set => _position = Math.Max(0, Math.Min(value, Length));
         }
 
         #endregion

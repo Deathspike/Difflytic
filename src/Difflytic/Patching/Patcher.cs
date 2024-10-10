@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using System.Threading.Tasks;
 using Difflytic.Patching.Reading;
+using Microsoft.Win32.SafeHandles;
 
 namespace Difflytic.Patching
 {
@@ -10,8 +11,15 @@ namespace Difflytic.Patching
 
         public static void Patch(string diffPath, string oldPath, string outputPath)
         {
-            var reader = Reader.Create(diffPath, oldPath);
-            WriteFiles(diffPath, oldPath, outputPath, reader);
+            using var diffHandle = File.OpenHandle(diffPath);
+            using var oldHandle = File.OpenHandle(oldPath);
+            Patch(diffHandle, oldHandle, outputPath);
+        }
+
+        public static void Patch(SafeFileHandle diffHandle, SafeFileHandle oldHandle, string outputPath)
+        {
+            var reader = Reader.Create(diffHandle, oldHandle);
+            WriteFiles(diffHandle, oldHandle, outputPath, reader);
             MoveFiles(outputPath, reader);
         }
 
@@ -25,11 +33,11 @@ namespace Difflytic.Patching
             }
         }
 
-        private static void WriteFiles(string diffPath, string oldPath, string outputPath, Reader reader)
+        private static void WriteFiles(SafeFileHandle diffHandle, SafeFileHandle oldHandle, string outputPath, Reader reader)
         {
             Parallel.ForEach(reader, file =>
             {
-                using var inputStream = file.Open(diffPath, oldPath);
+                using var inputStream = file.Open(diffHandle, oldHandle);
                 using var outputStream = File.OpenWrite(Path.Combine(outputPath, file.Name + ".diff.tmp"));
                 outputStream.SetLength(0);
                 inputStream.CopyTo(outputStream);

@@ -9,51 +9,32 @@ namespace Difflytic.Patching.Reading.IO
         private readonly SafeFileHandle _diffHandle;
         private readonly DiffStreamHeader _header;
         private readonly SafeFileHandle _oldHandle;
-        private readonly bool _ownsHandle;
         private long _position;
 
         #region Constructors
 
-        public DiffStream(SafeFileHandle diffHandle, DiffStreamHeader header, SafeFileHandle oldHandle, bool ownsHandle = true)
+        public DiffStream(SafeFileHandle diffHandle, DiffStreamHeader header, SafeFileHandle oldHandle)
         {
             _diffHandle = diffHandle;
             _header = header;
             _oldHandle = oldHandle;
-            _ownsHandle = ownsHandle;
-        }
-
-        #endregion
-
-        #region Destructors
-
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing && _ownsHandle)
-            {
-                _diffHandle.Dispose();
-                _oldHandle.Dispose();
-            }
-
-            base.Dispose(disposing);
         }
 
         #endregion
 
         #region Methods
 
-        private int ReadData(byte[] buffer, int count, int offset, long position)
+        private int ReadData(byte[] buffer, int offset, int count, long position)
         {
             var bytesRead = RandomAccess.Read(_diffHandle, new Span<byte>(buffer, offset, count), position);
-            if (bytesRead == 0) return 0;
-            Position += bytesRead;
+            _position += bytesRead;
             return bytesRead;
         }
 
-        private int ReadReference(byte[] buffer, int count, int offset, long position)
+        private int ReadReference(byte[] buffer, int offset, int count, long position)
         {
             var bytesRead = RandomAccess.Read(_oldHandle, new Span<byte>(buffer, offset, count), position);
-            if (bytesRead == 0) return 0;
-            Position += bytesRead;
+            _position += bytesRead;
             return bytesRead;
         }
 
@@ -80,7 +61,7 @@ namespace Difflytic.Patching.Reading.IO
             // Read the requested sequence of bytes.
             var maxCount = maxBytesToRead < int.MaxValue ? Math.Min(count, (int)maxBytesToRead) : count;
             var position = block.Value.OtherPosition + blockOffset;
-            return block.Value.InData ? ReadData(buffer, maxCount, offset, position) : ReadReference(buffer, maxCount, offset, position);
+            return block.Value.InData ? ReadData(buffer, offset, maxCount, position) : ReadReference(buffer, offset, maxCount, position);
         }
 
         public override long Seek(long offset, SeekOrigin origin)
@@ -88,14 +69,20 @@ namespace Difflytic.Patching.Reading.IO
             switch (origin)
             {
                 case SeekOrigin.Begin:
+                {
                     Position = offset;
                     break;
+                }
                 case SeekOrigin.Current:
+                {
                     Position += offset;
                     break;
+                }
                 case SeekOrigin.End:
+                {
                     Position = Length - offset;
                     break;
+                }
             }
 
             return _position;

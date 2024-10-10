@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using Difflytic.Hashing;
+using Difflytic.Patching.Reading.Utilities;
+using Microsoft.Win32.SafeHandles;
 
 namespace Difflytic.Patching.Reading
 {
@@ -15,13 +17,13 @@ namespace Difflytic.Patching.Reading
 
         private Reader()
         {
-            _files = new List<ReaderFile>();
+            _files = [];
         }
 
-        public static Reader Create(string diffPath, string oldPath, bool skipValidate = false)
+        public static Reader Create(SafeFileHandle diffHandle, SafeFileHandle oldHandle, bool skipValidate = false)
         {
             var reader = new Reader();
-            reader.Init(diffPath, oldPath, skipValidate);
+            reader.Init(diffHandle, oldHandle, skipValidate);
             return reader;
         }
 
@@ -29,10 +31,10 @@ namespace Difflytic.Patching.Reading
 
         #region Methods
 
-        private void Init(string diffPath, string oldPath, bool skipValidate)
+        private void Init(SafeFileHandle diffHandle, SafeFileHandle oldHandle, bool skipValidate)
         {
             // Configure the file stream and reader.
-            using var diffStream = new BufferedStream(File.OpenRead(diffPath));
+            using var diffStream = new BufferedStream(new FileHandleStream(diffHandle));
             using var diffReader = new BinaryReader(diffStream, Encoding.UTF8, true);
 
             // Validate the file signature and version.
@@ -44,7 +46,7 @@ namespace Difflytic.Patching.Reading
             // Validate the file hash.
             var blockSize = diffReader.Read7BitEncodedInt();
             var fullHash = diffReader.ReadUInt32();
-            if (!skipValidate) ValidateFile(blockSize, fullHash, hashType, oldPath);
+            if (!skipValidate) ValidateFile(blockSize, fullHash, hashType, oldHandle);
 
             // Read the files.
             ReadFiles(diffReader, version);
@@ -89,9 +91,9 @@ namespace Difflytic.Patching.Reading
             }
         }
 
-        private void ValidateFile(int blockSize, uint fullHash, byte hashType, string oldPath)
+        private void ValidateFile(int blockSize, uint fullHash, byte hashType, SafeFileHandle oldHandle)
         {
-            using var oldStream = new BufferedStream(File.OpenRead(oldPath));
+            using var oldStream = new BufferedStream(new FileHandleStream(oldHandle));
             var buffer = new byte[blockSize];
             var blockHash = HashProvider.CreateBlockHash((HashType)hashType);
             var currentHash = 0U;

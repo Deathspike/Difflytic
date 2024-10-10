@@ -14,11 +14,17 @@ namespace Difflytic.Hashing
             switch (type)
             {
                 case HashType.Adler32:
+                {
                     return new Adler32BlockHash();
+                }
                 case HashType.MLCG:
+                {
                     return new MLCGBlockHash();
+                }
                 default:
-                    throw new Exception(nameof(CreateBlockHash));
+                {
+                    throw new ArgumentOutOfRangeException(type.ToString());
+                }
             }
         }
 
@@ -27,11 +33,17 @@ namespace Difflytic.Hashing
             switch (type)
             {
                 case HashType.Adler32:
+                {
                     return new Adler32RollingHash(blockSize);
+                }
                 case HashType.MLCG:
+                {
                     return new MLCGRollingHash(blockSize);
+                }
                 default:
-                    throw new Exception(nameof(CreateBlockHash));
+                {
+                    throw new ArgumentOutOfRangeException(type.ToString());
+                }
             }
         }
 

@@ -89,7 +89,7 @@ namespace Difflytic.Diffing
                     }
                     default:
                     {
-                        throw new ArgumentOutOfRangeException(nameof(MergeFiles));
+                        throw new ArgumentOutOfRangeException(file.Type.ToString());
                     }
                 }
             }

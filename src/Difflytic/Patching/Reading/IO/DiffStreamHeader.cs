@@ -37,7 +37,7 @@ namespace Difflytic.Patching.Reading.IO
 
         private void Init(long dataPosition, SafeFileHandle diffHandle, long headerPosition)
         {
-            using var diffStream = new BufferedStream(new FileHandleStream(diffHandle, false));
+            using var diffStream = new BufferedStream(new FileHandleStream(diffHandle));
             using var diffReader = new BinaryReader(diffStream, Encoding.UTF8, true);
             var dataOffset = 0L;
             var i = 0;
