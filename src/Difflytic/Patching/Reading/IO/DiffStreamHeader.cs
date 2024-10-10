@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Text;
+using Difflytic.Patching.Reading.Utilities;
 using Microsoft.Win32.SafeHandles;
 
 namespace Difflytic.Patching.Reading.IO

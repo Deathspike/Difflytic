@@ -30,7 +30,7 @@ namespace Difflytic.Patching
             Parallel.ForEach(reader, file =>
             {
                 using var inputStream = file.Open(diffPath, oldPath);
-                using var outputStream = new BufferedStream(File.OpenWrite(Path.Combine(outputPath, file.Name + ".diff.tmp")));
+                using var outputStream = File.OpenWrite(Path.Combine(outputPath, file.Name + ".diff.tmp"));
                 outputStream.SetLength(0);
                 inputStream.CopyTo(outputStream);
             });

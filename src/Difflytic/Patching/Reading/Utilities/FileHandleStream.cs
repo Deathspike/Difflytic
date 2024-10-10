@@ -2,7 +2,7 @@
 using System.IO;
 using Microsoft.Win32.SafeHandles;
 
-namespace Difflytic.Patching.Reading.IO
+namespace Difflytic.Patching.Reading.Utilities
 {
     internal sealed class FileHandleStream : Stream
     {
@@ -51,7 +51,19 @@ namespace Difflytic.Patching.Reading.IO
 
         public override long Seek(long offset, SeekOrigin origin)
         {
-            throw new NotSupportedException();
+            switch (origin)
+            {
+                case SeekOrigin.Begin:
+                    Position = offset;
+                    break;
+                case SeekOrigin.Current:
+                    Position += offset;
+                    break;
+                case SeekOrigin.End:
+                    throw new NotSupportedException();
+            }
+
+            return _position;
         }
 
         public override void SetLength(long value)
@@ -71,12 +83,12 @@ namespace Difflytic.Patching.Reading.IO
 
         public override bool CanSeek
         {
-            get => throw new NotSupportedException();
+            get => true;
         }
 
         public override bool CanWrite
         {
-            get => throw new NotSupportedException();
+            get => false;
         }
 
         public override long Length
