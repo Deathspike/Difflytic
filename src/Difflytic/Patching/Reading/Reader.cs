@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -9,21 +8,20 @@ using Microsoft.Win32.SafeHandles;
 
 namespace Difflytic.Patching.Reading
 {
-    public sealed class Reader : IEnumerable<ReaderFile>
+    public sealed class Reader : List<ReaderFile>
     {
-        private readonly List<ReaderFile> _files;
-
         #region Constructors
 
-        private Reader()
+        private Reader(SafeFileHandle diffHandle, SafeFileHandle oldHandle)
         {
-            _files = [];
+            DiffHandle = diffHandle;
+            OldHandle = oldHandle;
         }
 
         public static Reader Create(SafeFileHandle diffHandle, SafeFileHandle oldHandle, bool skipValidate = false)
         {
-            var reader = new Reader();
-            reader.Init(diffHandle, oldHandle, skipValidate);
+            var reader = new Reader(diffHandle, oldHandle);
+            reader.Init(skipValidate);
             return reader;
         }
 
@@ -31,10 +29,10 @@ namespace Difflytic.Patching.Reading
 
         #region Methods
 
-        private void Init(SafeFileHandle diffHandle, SafeFileHandle oldHandle, bool skipValidate)
+        private void Init(bool skipValidate)
         {
             // Configure the file stream and reader.
-            using var diffStream = new BufferedStream(new FileHandleStream(diffHandle));
+            using var diffStream = new BufferedStream(new FileHandleStream(DiffHandle));
             using var diffReader = new BinaryReader(diffStream, Encoding.UTF8, true);
 
             // Validate the file signature and version.
@@ -46,7 +44,7 @@ namespace Difflytic.Patching.Reading
             // Validate the file hash.
             var blockSize = diffReader.Read7BitEncodedInt();
             var fullHash = diffReader.ReadUInt32();
-            if (!skipValidate) ValidateFile(blockSize, fullHash, hashType, oldHandle);
+            if (!skipValidate) ValidateFile(blockSize, fullHash, hashType);
 
             // Read the files.
             ReadFiles(diffReader, version);
@@ -67,13 +65,13 @@ namespace Difflytic.Patching.Reading
                         var headerCount = diffReader.Read7BitEncodedInt64();
                         var headerLength = diffReader.Read7BitEncodedInt64();
                         var dataLength = diffReader.Read7BitEncodedInt64();
-                        _files.Add(new ReaderFile(dataLength, headerCount, headerLength, name, type));
+                        Add(new ReaderFile(dataLength, headerCount, headerLength, name, type));
                         break;
                     }
                     default:
                     {
                         var dataLength = diffReader.Read7BitEncodedInt64();
-                        _files.Add(new ReaderFile(dataLength, 0, 0, name, type));
+                        Add(new ReaderFile(dataLength, 0, 0, name, type));
                         break;
                     }
                 }
@@ -82,7 +80,7 @@ namespace Difflytic.Patching.Reading
 
         private void UpdateFiles(Stream diffStream)
         {
-            foreach (var file in _files)
+            foreach (var file in this)
             {
                 file.HeaderPosition = diffStream.Position;
                 diffStream.Position += file.HeaderLength;
@@ -91,9 +89,9 @@ namespace Difflytic.Patching.Reading
             }
         }
 
-        private void ValidateFile(int blockSize, uint fullHash, byte hashType, SafeFileHandle oldHandle)
+        private void ValidateFile(int blockSize, uint fullHash, byte hashType)
         {
-            using var oldStream = new BufferedStream(new FileHandleStream(oldHandle));
+            using var oldStream = new BufferedStream(new FileHandleStream(OldHandle));
             var buffer = new byte[blockSize];
             var blockHash = HashProvider.CreateBlockHash((HashType)hashType);
             var currentHash = 0U;
@@ -117,21 +115,10 @@ namespace Difflytic.Patching.Reading
 
         #endregion
 
-        #region Implementation of IEnumerable
+        #region Properties
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
-
-        #endregion
-
-        #region Implementation of IEnumerable<ReaderFile>
-
-        public IEnumerator<ReaderFile> GetEnumerator()
-        {
-            return _files.GetEnumerator();
-        }
+        public SafeFileHandle DiffHandle { get; }
+        public SafeFileHandle OldHandle { get; }
 
         #endregion
     }

@@ -99,7 +99,7 @@ foreach (var file in reader) {}
 Then you can open a new file as a stream:
 
 ```cs
-using var stream = file.Open(diffPath, oldPath);
+using var stream = reader.Open(file);
 ```
 
 ## Contributions

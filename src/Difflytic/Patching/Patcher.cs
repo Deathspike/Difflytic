@@ -19,7 +19,7 @@ namespace Difflytic.Patching
         public static void Patch(SafeFileHandle diffHandle, SafeFileHandle oldHandle, string outputPath)
         {
             var reader = Reader.Create(diffHandle, oldHandle);
-            WriteFiles(diffHandle, oldHandle, outputPath, reader);
+            WriteFiles(outputPath, reader);
             MoveFiles(outputPath, reader);
         }
 
@@ -33,11 +33,11 @@ namespace Difflytic.Patching
             }
         }
 
-        private static void WriteFiles(SafeFileHandle diffHandle, SafeFileHandle oldHandle, string outputPath, Reader reader)
+        private static void WriteFiles(string outputPath, Reader reader)
         {
             Parallel.ForEach(reader, file =>
             {
-                using var inputStream = file.Open(diffHandle, oldHandle);
+                using var inputStream = reader.Open(file);
                 using var outputStream = File.OpenWrite(Path.Combine(outputPath, file.Name + ".diff.tmp"));
                 outputStream.SetLength(0);
                 inputStream.CopyTo(outputStream);
